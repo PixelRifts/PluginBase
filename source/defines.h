@@ -103,6 +103,8 @@ exit(-10);          \
 #define Clamp(a,x,b) (((x)<(a))?(a):((b)<(x))?(b):(x))
 #define ClampTop(a,b) Min(a,b)
 #define ClampBot(a,b) Max(a,b)
+#define ReverseClamp(a,x,b) (((x)<(a))?(b):((b)<(x))?(a):(x))
+#define Wrap(a,x,b) ReverseClamp(a,x,b)
 
 #define MemoryCopy(d,s,z) memmove((d), (s), (z))
 #define MemoryCopyStruct(d,s) MemoryCopy((d),(s), Min(sizeof(*(d)) , sizeof(*(s))))

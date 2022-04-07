@@ -27,11 +27,6 @@ int main(int argc, char** argv) {
     
     C_Init();
     
-    M_Scratch scratch = scratch_get();
-    C_Panel* root = C_PanelAlloc(&scratch.arena, (rect) { 0.f, 0.f, 1080.f, 720.f });
-    C_PanelChop(&scratch.arena, root, PanelChop_Horizontal);
-    C_PanelChop(&scratch.arena, root->b, PanelChop_Vertical);
-    
     while (!glfwWindowShouldClose(window)) {
         I_Reset(window);
         glfwPollEvents();
@@ -40,13 +35,10 @@ int main(int argc, char** argv) {
         
         D_BeginDraw();
         C_Render();
-        C_PanelRender(root);
         D_EndDraw();
         
         glfwSwapBuffers(window);
     }
-    
-    scratch_return(&scratch);
     
     C_Shutdown();
     
