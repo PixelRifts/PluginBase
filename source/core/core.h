@@ -3,7 +3,9 @@
 #ifndef CORE_H
 #define CORE_H
 
+#include "defines.h"
 #include <glad/glad.h>
+#include "os/os.h"
 
 #include "defines.h"
 #include "base/mem.h"

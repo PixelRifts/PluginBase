@@ -3,12 +3,16 @@
 Array_Prototype(panel_array, C_Panel*);
 Array_Impl(panel_array, C_Panel*);
 
+Array_Prototype(plugin_array, C_Plugin);
+Array_Impl(plugin_array, C_Plugin);
+
 typedef struct C_ClientState {
     M_Arena arena;
     C_Panel* root;
     C_Panel* selected;
     i32 selected_index;
     panel_array panels;
+    plugin_array plugins;
 } C_ClientState;
 
 static C_ClientState _client_state = {0};
@@ -101,6 +105,32 @@ void C_PanelResize(C_Panel* panel, rect new_bounds) {
 void C_Init() {
     arena_init(&_client_state.arena);
     _client_state.root = C_PanelAlloc(&_client_state.arena, (rect) { 0.f, 0.f, 1080.f, 720.f });
+    
+    M_Scratch scratch = scratch_get();
+    OS_FileIterator iterator = OS_FileIterInit(str_lit("plugins"));
+    string name; OS_FileProperties props;
+    while (OS_FileIterNext(&scratch.arena, &iterator, &name, &props)) {
+        u64 last_dot = str_find_last(name, str_lit("."), 0);
+        string ext = { name.str + last_dot, name.size - last_dot };
+        if (str_eq(ext, str_lit("dll"))) {
+            OS_Library lib = OS_LibraryLoad(str_cat(&scratch.arena, str_lit("plugins/"), name));
+            
+            PluginInitProcedure* init_proc = OS_LibraryGetFunction(lib, "Init");
+            PluginUpdateProcedure* update_proc = OS_LibraryGetFunction(lib, "Update");
+            PluginRenderProcedure* render_proc = OS_LibraryGetFunction(lib, "Render");
+            PluginFreeProcedure* free_proc = OS_LibraryGetFunction(lib, "Free");
+            
+            C_Plugin plugin = { lib, init_proc, update_proc, render_proc, free_proc };
+            
+            plugin_array_add(&_client_state.plugins, plugin);
+        }
+    }
+    OS_FileIterEnd(&iterator);
+    
+    Iterate(_client_state.plugins, i) {
+        if (_client_state.plugins.elems[i].init) _client_state.plugins.elems[i].init();
+    }
+    scratch_return(&scratch);
 }
 
 static void Refill(C_Panel* panel) {
@@ -139,8 +169,6 @@ void C_Update() {
         if (I_KeyPressed(GLFW_KEY_EQUAL)) {
             C_PanelChop(&_client_state.arena, _client_state.selected, PanelChop_Vertical);
         }
-        
-        
     }
     _client_state.panels.len = 0;
     Refill(_client_state.root);
@@ -153,6 +181,12 @@ void C_Render() {
 }
 
 void C_Shutdown() {
+    Iterate(_client_state.plugins, i) {
+        if (_client_state.plugins.elems[i].free) _client_state.plugins.elems[i].free();
+        OS_LibraryRelease(_client_state.plugins.elems[i].lib);
+    }
+    
     panel_array_free(&_client_state.panels);
+    plugin_array_free(&_client_state.plugins);
     arena_free(&_client_state.arena);
 }

@@ -24,9 +24,8 @@ load_paths_custom = {
 };
 
 load_paths = {
-	{ load_paths_custom, .os = "win"  },
+	{ load_paths_custom, .os = "win" },
 };
-
 
 command_list =
 {
@@ -52,8 +51,19 @@ command_list =
 			{ "run.bat", .os = "win" },
 		},
 	},
+	{
+		.name = "build_plugs",
+		.out = "*compilation*",
+		.footer_panel = true,
+		.save_dirty_files = true,
+		.cursor_at_end = false,
+		.cmd =
+		{
+			{ "build_plugins.bat", .os = "win" },
+		},
+	},
 };
 
 fkey_command[1] = "build";
 fkey_command[2] = "run";
-
+fkey_command[3] = "build_plugs";
