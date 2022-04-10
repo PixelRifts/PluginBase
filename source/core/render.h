@@ -5,9 +5,17 @@
 
 #define R_MAX_INTERNAL_CACHE_VCOUNT 1024
 
-void R_InitOpenGL();
-void R_BeginRenderOpenGL();
-void R_ShutdownOpenGL();
+typedef struct R_Renderer {
+    M_Arena DefaultArena;
+    
+    u32 vao;
+    u32 vbo;
+    u32 program;
+} R_Renderer;
+
+void R_InitOpenGL(R_Renderer* _render_state);
+void R_BeginRenderOpenGL(R_Renderer* _render_state);
+void R_ShutdownOpenGL(R_Renderer* _render_state);
 
 typedef u32 R_Texture;
 

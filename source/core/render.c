@@ -6,27 +6,17 @@
 
 #include "shaders.h"
 
-typedef struct R_State {
-    M_Arena DefaultArena;
-    
-    u32 vao;
-    u32 vbo;
-    u32 program;
-} R_State;
-
-static R_State _render_state = {0};
-
-void R_InitOpenGL() {
-    _render_state.DefaultArena = (M_Arena) {0};
-    arena_init(&_render_state.DefaultArena);
+void R_InitOpenGL(R_Renderer* _render_state) {
+    _render_state->DefaultArena = (M_Arena) {0};
+    arena_init(&_render_state->DefaultArena);
     
     //- Buffers 
     {
-        glGenVertexArrays(1, &_render_state.vao);
-        glBindVertexArray(_render_state.vao);
+        glGenVertexArrays(1, &_render_state->vao);
+        glBindVertexArray(_render_state->vao);
         
-        glGenBuffers(1, &_render_state.vbo);
-        glBindBuffer(GL_ARRAY_BUFFER, _render_state.vbo);
+        glGenBuffers(1, &_render_state->vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, _render_state->vbo);
         glBufferData(GL_ARRAY_BUFFER, R_MAX_INTERNAL_CACHE_VCOUNT * sizeof(R_Vertex), nullptr, GL_DYNAMIC_DRAW);
         
         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(R_Vertex), (void*)offsetof(R_Vertex, pos));
@@ -75,43 +65,43 @@ void R_InitOpenGL() {
             exit(-21);
         }
         
-        _render_state.program = glCreateProgram();
-        glAttachShader(_render_state.program, vs);
-        glAttachShader(_render_state.program, fs);
-        glLinkProgram(_render_state.program);
-        glGetProgramiv(_render_state.program, GL_LINK_STATUS, &ret);
+        _render_state->program = glCreateProgram();
+        glAttachShader(_render_state->program, vs);
+        glAttachShader(_render_state->program, fs);
+        glLinkProgram(_render_state->program);
+        glGetProgramiv(_render_state->program, GL_LINK_STATUS, &ret);
         if (ret == GL_FALSE) {
             i32 length;
-            glGetProgramiv(_render_state.program, GL_INFO_LOG_LENGTH, &length);
+            glGetProgramiv(_render_state->program, GL_INFO_LOG_LENGTH, &length);
             GLchar *info = calloc(length, sizeof(GLchar));
-            glGetProgramInfoLog(_render_state.program, length, NULL, info);
+            glGetProgramInfoLog(_render_state->program, length, NULL, info);
             fprintf(stderr, "glLinkProgram failed:\n%s\n", info);
             free(info);
             exit(-22);
         }
-        glValidateProgram(_render_state.program);
-        glGetProgramiv(_render_state.program, GL_VALIDATE_STATUS, &ret);
+        glValidateProgram(_render_state->program);
+        glGetProgramiv(_render_state->program, GL_VALIDATE_STATUS, &ret);
         if (ret == GL_FALSE) {
             i32 length;
-            glGetProgramiv(_render_state.program, GL_INFO_LOG_LENGTH, &length);
+            glGetProgramiv(_render_state->program, GL_INFO_LOG_LENGTH, &length);
             GLchar *info = calloc(length, sizeof(GLchar));
-            glGetProgramInfoLog(_render_state.program, length, NULL, info);
+            glGetProgramInfoLog(_render_state->program, length, NULL, info);
             fprintf(stderr, "glValidateProgram failed:\n%s\n", info);
             free(info);
             exit(-23);
         }
-        glDetachShader(_render_state.program, vs);
-        glDetachShader(_render_state.program, fs);
+        glDetachShader(_render_state->program, vs);
+        glDetachShader(_render_state->program, fs);
         glDeleteShader(vs);
         glDeleteShader(fs);
         
-        glUseProgram(_render_state.program);
+        glUseProgram(_render_state->program);
         
         i32 textures[] = { 0, 1, 2, 3, 4, 5, 6, 7 };
-        i32 loc = glGetUniformLocation(_render_state.program, "u_tex");
+        i32 loc = glGetUniformLocation(_render_state->program, "u_tex");
         glUniform1iv(loc, 8, textures);
         mat4 projection = mat4_transpose(mat4_ortho(0, 1080, 0, 720, -1, 1000));
-        loc = glGetUniformLocation(_render_state.program, "u_projection");
+        loc = glGetUniformLocation(_render_state->program, "u_projection");
         glUniformMatrix4fv(loc, 1, GL_FALSE, projection.a);
     }
     
@@ -122,19 +112,19 @@ void R_InitOpenGL() {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
-void R_BeginRenderOpenGL() {
+void R_BeginRenderOpenGL(R_Renderer* _render_state) {
     glClear(GL_COLOR_BUFFER_BIT);
-    glBindBuffer(GL_ARRAY_BUFFER, _render_state.vbo);
-    glBindVertexArray(_render_state.vao);
-    glUseProgram(_render_state.program);
+    glBindBuffer(GL_ARRAY_BUFFER, _render_state->vbo);
+    glBindVertexArray(_render_state->vao);
+    glUseProgram(_render_state->program);
 }
 
-void R_ShutdownOpenGL() {
-    glDeleteBuffers(1, &_render_state.vbo);
-    glDeleteVertexArrays(1, &_render_state.vao);
-    glDeleteProgram(_render_state.program);
+void R_ShutdownOpenGL(R_Renderer* _render_state) {
+    glDeleteBuffers(1, &_render_state->vbo);
+    glDeleteVertexArrays(1, &_render_state->vao);
+    glDeleteProgram(_render_state->program);
     
-    arena_free(&_render_state.DefaultArena);
+    arena_free(&_render_state->DefaultArena);
 }
 
 R_VertexCache R_VertexCacheCreate(M_Arena* arena, u32 max_verts) {

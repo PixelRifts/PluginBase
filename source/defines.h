@@ -58,7 +58,7 @@ typedef void void_func(void);
 
 #define trace do { printf("Trace %d\n", __LINE__); fflush(stdout); } while (0)
 #define flush fflush(stdout)
-#define unreachable printf("How did we get here? In %s on line %d\n", FILE_NAME, __LINE__)
+#define unreachable do { printf("How did we get here? In %s on line %d\n", FILE_NAME, __LINE__); fflush(stdout); } while(0)
 
 #define FATAL(s)            \
 do {                    \
@@ -91,7 +91,13 @@ exit(-10);          \
 #  define dll_export __attribute__((dllexport))
 #  define dll_import __attribute__((dllimport))
 #else
-#  error shared_export not defined for this compiler
+#  error dll_export not defined for this compiler
+#endif
+
+#ifdef PLUGIN
+#  define dll_plugin_api
+#else
+#  define dll_plugin_api dll_export
 #endif
 
 #define Gigabytes(count) (u64) (count * 1024 * 1024 * 1024)

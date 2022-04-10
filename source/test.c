@@ -20,30 +20,30 @@ int main(int argc, char** argv) {
     
     gladLoadGL();
     
-    I_Init(window);
+    I_InputState input = {0};
+    I_Init(&input, window);
     
-    R_InitOpenGL();
-    D_Init();
+    D_Drawer drawer = {0};
+    D_Init(&drawer);
     
-    C_Init();
+    C_ClientState client_state = {0};
+    C_Init(&client_state);
     
     while (!glfwWindowShouldClose(window)) {
-        I_Reset(window);
+        I_Reset(&input);
         glfwPollEvents();
         
         C_Update();
         
-        D_BeginDraw();
-        C_Render();
-        D_EndDraw();
+        D_BeginDraw(&drawer);
+        C_Render(&drawer);
+        D_EndDraw(&drawer);
         
         glfwSwapBuffers(window);
     }
     
     C_Shutdown();
-    
-    D_Shutdown();
-    R_ShutdownOpenGL();
+    D_Shutdown(&drawer);
     
     glfwDestroyWindow(window);
     glfwTerminate();

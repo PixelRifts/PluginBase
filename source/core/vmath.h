@@ -3,6 +3,7 @@
 #ifndef VMATH_H
 #define VMATH_H
 
+#define EPSILON 0.001f
 #define PI 3.141592653589f
 #define HALF_PI 1.570796326794f
 #define DEG_TO_RAD 0.0174532925f
@@ -20,6 +21,7 @@ typedef struct rect {
 } rect;
 
 //~ Math Utilities
+
 void animate_f32exp(f32* val, f32 target, f32 speed, f32 dt);
 
 //~ Inline Initializers

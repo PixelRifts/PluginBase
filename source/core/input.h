@@ -5,23 +5,24 @@
 #ifndef INPUT_H
 #define INPUT_H
 
-b32 I_Init(GLFWwindow* window);
+typedef struct I_InputState {
+    GLFWwindow* window;
+    u8 key_states[350];
+    
+    f32 mouse_x;
+    f32 mouse_y;
+    f32 mouse_scrollx;
+    f32 mouse_scrolly;
+    f32 mouse_absscrollx;
+    f32 mouse_absscrolly;
+} I_InputState;
+
+b32 I_Init(I_InputState* _input_state, GLFWwindow* window);
 void I_Reset();
 
 b32 I_Key(i32 key);
 b32 I_KeyPressed(i32 key);
 b32 I_KeyReleased(i32 key);
 b32 I_KeyHeld(i32 key);
-
-f32 I_GetMouseScroll();
-f32 I_GetAbsMouseScroll();
-
-f32 I_GetMouseXScroll();
-f32 I_GetAbsMouseXScroll();
-
-vec2 I_GetMousePos();
-f32  I_GetMouseX();
-f32  I_GetMouseY();
-
 
 #endif //INPUT_H

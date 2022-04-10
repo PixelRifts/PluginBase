@@ -4,6 +4,7 @@
 #define CORE_H
 
 #include "defines.h"
+#include "base/ds.h"
 #include <glad/glad.h>
 #include "os/os.h"
 

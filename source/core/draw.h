@@ -5,19 +5,48 @@
 
 #define D_MAX_BATCHES 16
 
-void D_Init();
-void D_Shutdown();
+#include <stb/stb_truetype.h>
 
-void D_DrawQuadC(rect quad, vec4 color, f32 rounding);
-void D_DrawQuadT(rect quad, R_Texture texture, vec4 tint);
-void D_DrawQuadST(rect quad, R_Texture texture, rect uvs, vec4 tint);
+typedef struct D_Batch {
+    R_VertexCache cache;
+    R_Texture textures[8];
+    u8 tex_count;
+} D_Batch;
 
-void D_DrawString(vec2 pos, string str);
-void D_DrawStringC(vec2 pos, string str, vec4 color);
+typedef struct D_FontInfo {
+    R_Texture font_texture;
+    stbtt_packedchar cdata[95];
+    f32 scale;
+    i32 ascent;
+    i32 descent;
+    i32 baseline;
+} D_FontInfo;
 
-void D_SetFont(string filename, f32 size);
+typedef struct D_Drawer {
+    M_Arena arena;
+    
+    D_Batch batches[D_MAX_BATCHES];
+    u8 current_batch;
+    u8 initialized_batches;
+    
+    R_Renderer renderer;
+    
+    R_Texture white;
+} D_Drawer;
 
-void D_BeginDraw();
-void D_EndDraw();
+void D_Init(D_Drawer* _draw2d_state);
+void D_Shutdown(D_Drawer* _draw2d_state);
+
+dll_plugin_api void D_DrawQuadC(D_Drawer* _draw2d_state, rect quad, vec4 color, f32 rounding);
+dll_plugin_api void D_DrawQuadT(D_Drawer* _draw2d_state, rect quad, R_Texture texture, vec4 tint);
+dll_plugin_api void D_DrawQuadST(D_Drawer* _draw2d_state, rect quad, R_Texture texture, rect uvs, vec4 tint);
+
+dll_plugin_api void D_DrawString(D_Drawer* _draw2d_state, D_FontInfo* fontinfo, vec2 pos, string str);
+dll_plugin_api void D_DrawStringC(D_Drawer* _draw2d_state, D_FontInfo* fontinfo, vec2 pos, string str, vec4 color);
+
+void D_SetFont(D_FontInfo* fontinfo, string filename, f32 size);
+
+void D_BeginDraw(D_Drawer* _draw2d_state);
+void D_EndDraw(D_Drawer* _draw2d_state);
 
 #endif //DRAW_H
