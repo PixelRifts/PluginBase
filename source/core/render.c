@@ -25,6 +25,7 @@ void R_InitOpenGL(R_Renderer* _render_state) {
         glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(R_Vertex), (void*)offsetof(R_Vertex, color));
         glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(R_Vertex), (void*)offsetof(R_Vertex, rounding));
         glVertexAttribPointer(5, 2, GL_FLOAT, GL_FALSE, sizeof(R_Vertex), (void*)offsetof(R_Vertex, uidims));
+        glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE, sizeof(R_Vertex), (void*)offsetof(R_Vertex, uicorner));
         
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
@@ -32,6 +33,7 @@ void R_InitOpenGL(R_Renderer* _render_state) {
         glEnableVertexAttribArray(3);
         glEnableVertexAttribArray(4);
         glEnableVertexAttribArray(5);
+        glEnableVertexAttribArray(6);
     }
     
     //- Shaders 

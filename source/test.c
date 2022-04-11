@@ -22,6 +22,7 @@ int main(int argc, char** argv) {
     
     I_InputState input = {0};
     I_Init(&input, window);
+    glfwSetWindowUserPointer(window, &input);
     
     D_Drawer drawer = {0};
     D_Init(&drawer);
@@ -33,7 +34,7 @@ int main(int argc, char** argv) {
         I_Reset(&input);
         glfwPollEvents();
         
-        C_Update();
+        C_Update(&input);
         
         D_BeginDraw(&drawer);
         C_Render(&drawer);

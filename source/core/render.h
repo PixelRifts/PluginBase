@@ -26,6 +26,7 @@ typedef struct R_Vertex {
     vec4 color;
     f32  rounding;
     vec2 uidims;
+    vec2 uicorner;
 } R_Vertex;
 
 typedef struct R_VertexCache {

@@ -28,6 +28,8 @@ typedef struct D_Drawer {
     D_Batch batches[D_MAX_BATCHES];
     u8 current_batch;
     u8 initialized_batches;
+    rect cull_quad;
+    vec2 offset;
     
     R_Renderer renderer;
     
@@ -37,6 +39,12 @@ typedef struct D_Drawer {
 void D_Init(D_Drawer* _draw2d_state);
 void D_Shutdown(D_Drawer* _draw2d_state);
 
+rect D_PushCullRect(D_Drawer* _draw2d_state, rect new_quad);
+void D_PopCullRect(D_Drawer* _draw2d_state, rect old_quad);
+vec2 D_PushOffset(D_Drawer* _draw2d_state, vec2 new_offset);
+void D_PopOffset(D_Drawer* _draw2d_state, vec2 old_offset);
+
+dll_plugin_api void D_DrawQuad(D_Drawer* _draw2d_state, rect quad, R_Texture texture, rect uvs, vec4 color, f32 rounding);
 dll_plugin_api void D_DrawQuadC(D_Drawer* _draw2d_state, rect quad, vec4 color, f32 rounding);
 dll_plugin_api void D_DrawQuadT(D_Drawer* _draw2d_state, rect quad, R_Texture texture, vec4 tint);
 dll_plugin_api void D_DrawQuadST(D_Drawer* _draw2d_state, rect quad, R_Texture texture, rect uvs, vec4 tint);

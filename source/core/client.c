@@ -73,7 +73,13 @@ void C_PanelRender(D_Drawer* drawer, C_Panel* panel) {
         if (_client_state->selected == panel) { 
             D_DrawQuadC(drawer, panel->bounds, (vec4) { 0.23f, 0.23f, 0.23f, 1.0f }, 10);
         } else D_DrawQuadC(drawer, panel->bounds, (vec4) { 0.2f, 0.2f, 0.2f, 1.0f }, 10);
+        
+        vec2 old = D_PushOffset(drawer, (vec2) { panel->bounds.x, panel->bounds.y });
+        rect old_cull = D_PushCullRect(drawer, panel->bounds);
         if (panel->content.render) panel->content.render(panel->context, drawer);
+        D_PopCullRect(drawer, old_cull);
+        D_PopOffset(drawer, old);
+        
     } else {
         C_PanelRender(drawer, panel->a);
         C_PanelRender(drawer, panel->b);
@@ -94,7 +100,10 @@ void C_PanelDestroy(C_Panel* panel) {
         panel->parent->b->parent = panel->parent;
     }
     
-    if (panel->content.free) panel->content.free(panel->context);
+    if (panel->content.free) {
+        panel->content.free(panel->context);
+        panel->context = nullptr;
+    }
     panel->is_destroyed = true;
 }
 
@@ -194,18 +203,18 @@ static void Refill(C_Panel* panel) {
     }
 }
 
-static void PanelUpdate(C_Panel* panel) {
+static void PanelUpdate(C_Panel* panel, I_InputState* input) {
     if (!panel->is_leaf) {
-        PanelUpdate(panel->a);
-        PanelUpdate(panel->b);
+        PanelUpdate(panel->a, input);
+        PanelUpdate(panel->b, input);
     } else 
-        if (panel->content.update) panel->content.update(panel->context);
+        if (panel->content.update) panel->content.update(panel->context, input);
 }
 
-void C_Update() {
-    if (I_Key(GLFW_KEY_LEFT_CONTROL) || I_Key(GLFW_KEY_RIGHT_CONTROL)) {
-        if (I_KeyPressed(GLFW_KEY_COMMA)) {
-            if (I_Key(GLFW_KEY_LEFT_SHIFT) || I_Key(GLFW_KEY_RIGHT_SHIFT)) {
+void C_Update(I_InputState* input) {
+    if (I_Key(input, GLFW_KEY_LEFT_CONTROL) || I_Key(input, GLFW_KEY_RIGHT_CONTROL)) {
+        if (I_KeyPressed(input, GLFW_KEY_COMMA)) {
+            if (I_Key(input, GLFW_KEY_LEFT_SHIFT) || I_Key(input, GLFW_KEY_RIGHT_SHIFT)) {
                 _client_state->selected_index--;
             } else {
                 _client_state->selected_index++;
@@ -214,8 +223,8 @@ void C_Update() {
             _client_state->selected_index = Wrap(0, _client_state->selected_index, (_client_state->panels.len - 1));
         }
         
-        if (I_Key(GLFW_KEY_LEFT_SHIFT) || I_Key(GLFW_KEY_RIGHT_SHIFT)) {
-            if (I_KeyPressed(GLFW_KEY_P)) {
+        if (I_Key(input, GLFW_KEY_LEFT_SHIFT) || I_Key(input, GLFW_KEY_RIGHT_SHIFT)) {
+            if (I_KeyPressed(input, GLFW_KEY_P)) {
                 if (ValidateSiblingSurviving(_client_state->selected)) {
                     C_PanelClose(_client_state->selected);
                     _client_state->selected_index--;
@@ -224,11 +233,11 @@ void C_Update() {
             }
         }
         
-        if (I_KeyPressed(GLFW_KEY_MINUS)) {
+        if (I_KeyPressed(input, GLFW_KEY_MINUS)) {
             C_PanelChop(&_client_state->arena, _client_state->selected, PanelChop_Horizontal);
         }
         
-        if (I_KeyPressed(GLFW_KEY_EQUAL)) {
+        if (I_KeyPressed(input, GLFW_KEY_EQUAL)) {
             C_PanelChop(&_client_state->arena, _client_state->selected, PanelChop_Vertical);
         }
     }
@@ -237,6 +246,7 @@ void C_Update() {
     
     _client_state->selected = _client_state->panels.elems[_client_state->selected_index];
     C_PanelUpdate(_client_state->root);
+    PanelUpdate(_client_state->root, input);
 }
 
 void C_Render(D_Drawer* drawer) {
@@ -244,7 +254,10 @@ void C_Render(D_Drawer* drawer) {
 }
 
 void C_Shutdown() {
-    if (_client_state->root->content.free) _client_state->root->content.free(_client_state->root->context);
+    if (_client_state->root->content.free && _client_state->root->context) {
+        _client_state->root->content.free(_client_state->root->context);
+        _client_state->root->context = nullptr;
+    }
     panel_array_free(&_client_state->panels);
     plugin_array_free(&_client_state->plugins);
     arena_free(&_client_state->arena);

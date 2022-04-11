@@ -42,6 +42,8 @@ void D_Init(D_Drawer* _draw2d_state) {
     arena_init(&_draw2d_state->arena);
     _draw2d_state->initialized_batches = 1;
     _draw2d_state->current_batch = 0;
+    _draw2d_state->cull_quad = (rect) { 0, 0, 1080, 720 }; // @resize CULLQUAD
+    _draw2d_state->offset = (vec2) { 0.f, 0.f };
     _draw2d_state->batches[_draw2d_state->current_batch] = (D_Batch) {0};
     _draw2d_state->batches[_draw2d_state->current_batch].cache = R_VertexCacheCreate(&_draw2d_state->arena, R_MAX_INTERNAL_CACHE_VCOUNT);
     _draw2d_state->white = R_TextureCreateWhite();
@@ -52,148 +54,103 @@ void D_Shutdown(D_Drawer* _draw2d_state) {
     R_ShutdownOpenGL(&_draw2d_state->renderer);
 }
 
-dll_plugin_api void D_DrawQuadC(D_Drawer* _draw2d_state, rect quad, vec4 color, f32 rounding) {
-    D_Batch* batch = D_GetCurrentBatch(_draw2d_state, 6, _draw2d_state->white);
-    int idx = D_BatchAddTexture(_draw2d_state, batch, _draw2d_state->white);
+rect D_PushCullRect(D_Drawer* _draw2d_state, rect new_quad) {
+    rect ret = _draw2d_state->cull_quad;
+    _draw2d_state->cull_quad = new_quad;
+    return ret;
+}
+
+void D_PopCullRect(D_Drawer* _draw2d_state, rect old_quad) {
+    _draw2d_state->cull_quad = old_quad;
+}
+
+vec2 D_PushOffset(D_Drawer* _draw2d_state, vec2 new_offset) {
+    vec2 ret = _draw2d_state->offset;
+    _draw2d_state->offset = new_offset;
+    return ret;
+}
+
+void D_PopOffset(D_Drawer* _draw2d_state, vec2 old_offset) {
+    _draw2d_state->offset = old_offset;
+}
+
+dll_plugin_api void D_DrawQuad(D_Drawer* _draw2d_state, rect quad, R_Texture texture, rect uvs, vec4 color, f32 rounding)  {
+    if (!rect_overlaps(quad, _draw2d_state->cull_quad)) return;
+    
+    quad.x += _draw2d_state->offset.x;
+    quad.y += _draw2d_state->offset.y;
+    D_Batch* batch = D_GetCurrentBatch(_draw2d_state, 6, texture);
+    int idx = D_BatchAddTexture(_draw2d_state, batch, texture);
+    rect uv_culled = rect_uv_cull(quad, uvs, _draw2d_state->cull_quad);
     R_Vertex vertices[6] = {
         {
-            .pos = vec2_init(quad.x, quad.y),
+            .pos = vec2_clamp(vec2_init(quad.x, quad.y), _draw2d_state->cull_quad),
             .tex_index = idx,
-            .tex_coords = vec2_init(0.f, 0.f),
+            .tex_coords = vec2_init(uv_culled.x, uv_culled.y),
             .color = color,
             .rounding = rounding,
             .uidims = vec2_init(quad.w, quad.h),
+            .uicorner = vec2_init(0.f, 0.f),
         },
         {
-            .pos = vec2_init(quad.x + quad.w, quad.y),
+            .pos = vec2_clamp(vec2_init(quad.x + quad.w, quad.y), _draw2d_state->cull_quad),
             .tex_index = idx,
-            .tex_coords = vec2_init(1.f, 0.f),
+            .tex_coords = vec2_init(uv_culled.x + uv_culled.w, uv_culled.y),
             .color = color,
             .rounding = rounding,
             .uidims = vec2_init(quad.w, quad.h),
+            .uicorner = vec2_init(1.f, 0.f),
         },
         {
-            .pos = vec2_init(quad.x + quad.w, quad.y + quad.h),
+            .pos = vec2_clamp(vec2_init(quad.x + quad.w, quad.y + quad.h), _draw2d_state->cull_quad),
             .tex_index = idx,
-            .tex_coords = vec2_init(1.f, 1.f),
+            .tex_coords = vec2_init(uv_culled.x + uv_culled.w, uv_culled.y + uv_culled.h),
             .color = color,
             .rounding = rounding,
             .uidims = vec2_init(quad.w, quad.h),
+            .uicorner = vec2_init(1.f, 1.f),
         },
         {
-            .pos = vec2_init(quad.x, quad.y),
+            .pos = vec2_clamp(vec2_init(quad.x, quad.y), _draw2d_state->cull_quad),
             .tex_index = idx,
-            .tex_coords = vec2_init(0.f, 0.f),
+            .tex_coords = vec2_init(uv_culled.x, uv_culled.y),
             .color = color,
             .rounding = rounding,
             .uidims = vec2_init(quad.w, quad.h),
+            .uicorner = vec2_init(0.f, 0.f),
         },
         {
-            .pos = vec2_init(quad.x + quad.w, quad.y + quad.h),
+            .pos = vec2_clamp(vec2_init(quad.x + quad.w, quad.y + quad.h), _draw2d_state->cull_quad),
             .tex_index = idx,
-            .tex_coords = vec2_init(1.f, 1.f),
+            .tex_coords = vec2_init(uv_culled.x + uv_culled.w, uv_culled.y + uv_culled.h),
             .color = color,
             .rounding = rounding,
             .uidims = vec2_init(quad.w, quad.h),
+            .uicorner = vec2_init(1.f, 1.f),
         },
         {
-            .pos = vec2_init(quad.x, quad.y + quad.h),
+            .pos = vec2_clamp(vec2_init(quad.x, quad.y + quad.h), _draw2d_state->cull_quad),
             .tex_index = idx,
-            .tex_coords = vec2_init(0.f, 1.f),
+            .tex_coords = vec2_init(uv_culled.x, uv_culled.y + uv_culled.h),
             .color = color,
             .rounding = rounding,
             .uidims = vec2_init(quad.w, quad.h),
+            .uicorner = vec2_init(0.f, 1.f),
         },
     };
     R_VertexCachePush(&batch->cache, vertices, 6);
+}
+
+dll_plugin_api void D_DrawQuadC(D_Drawer* _draw2d_state, rect quad, vec4 color, f32 rounding) {
+    D_DrawQuad(_draw2d_state, quad, _draw2d_state->white, rect_init(0.f, 0.f, 1.f, 1.f), color, rounding);
 }
 
 dll_plugin_api void D_DrawQuadT(D_Drawer* _draw2d_state, rect quad, R_Texture texture, vec4 tint) {
-    D_Batch* batch = D_GetCurrentBatch(_draw2d_state, 6, texture);
-    int idx = D_BatchAddTexture(_draw2d_state, batch, texture);
-    R_Vertex vertices[6] = {
-        {
-            .pos = vec2_init(quad.x, quad.y),
-            .tex_index = idx,
-            .tex_coords = vec2_init(0.f, 0.f),
-            .color = tint,
-        },
-        {
-            .pos = vec2_init(quad.x + quad.w, quad.y),
-            .tex_index = idx,
-            .tex_coords = vec2_init(1.f, 0.f),
-            .color = tint,
-        },
-        {
-            .pos = vec2_init(quad.x + quad.w, quad.y + quad.h),
-            .tex_index = idx,
-            .tex_coords = vec2_init(1.f, 1.f),
-            .color = tint,
-        },
-        {
-            .pos = vec2_init(quad.x, quad.y),
-            .tex_index = idx,
-            .tex_coords = vec2_init(0.f, 0.f),
-            .color = tint,
-        },
-        {
-            .pos = vec2_init(quad.x + quad.w, quad.y + quad.h),
-            .tex_index = idx,
-            .tex_coords = vec2_init(1.f, 1.f),
-            .color = tint,
-        },
-        {
-            .pos = vec2_init(quad.x, quad.y + quad.h),
-            .tex_index = idx,
-            .tex_coords = vec2_init(0.f, 1.f),
-            .color = tint,
-        },
-    };
-    R_VertexCachePush(&batch->cache, vertices, 6);
+    D_DrawQuad(_draw2d_state, quad, texture, rect_init(0.f, 0.f, 1.f, 1.f), tint, 0);
 }
 
 dll_plugin_api void D_DrawQuadST(D_Drawer* _draw2d_state, rect quad, R_Texture texture, rect uvs, vec4 tint) {
-    D_Batch* batch = D_GetCurrentBatch(_draw2d_state, 6, texture);
-    int idx = D_BatchAddTexture(_draw2d_state, batch, texture);
-    R_Vertex vertices[6] = {
-        {
-            .pos = vec2_init(quad.x, quad.y),
-            .tex_index = idx,
-            .tex_coords = vec2_init(uvs.x, uvs.y),
-            .color = tint,
-        },
-        {
-            .pos = vec2_init(quad.x + quad.w, quad.y),
-            .tex_index = idx,
-            .tex_coords = vec2_init(uvs.x + uvs.w, uvs.y),
-            .color = tint,
-        },
-        {
-            .pos = vec2_init(quad.x + quad.w, quad.y + quad.h),
-            .tex_index = idx,
-            .tex_coords = vec2_init(uvs.x + uvs.w, uvs.y + uvs.h),
-            .color = tint,
-        },
-        {
-            .pos = vec2_init(quad.x, quad.y),
-            .tex_index = idx,
-            .tex_coords = vec2_init(uvs.x, uvs.y),
-            .color = tint,
-        },
-        {
-            .pos = vec2_init(quad.x + quad.w, quad.y + quad.h),
-            .tex_index = idx,
-            .tex_coords = vec2_init(uvs.x + uvs.w, uvs.y + uvs.h),
-            .color = tint,
-        },
-        {
-            .pos = vec2_init(quad.x, quad.y + quad.h),
-            .tex_index = idx,
-            .tex_coords = vec2_init(uvs.x, uvs.y + uvs.h),
-            .color = tint,
-        },
-    };
-    R_VertexCachePush(&batch->cache, vertices, 6);
+    D_DrawQuad(_draw2d_state, quad, texture, uvs, tint, 0);
 }
 
 dll_plugin_api void D_DrawStringC(D_Drawer* _draw2d_state, D_FontInfo* fontinfo, vec2 pos, string str, vec4 color) {

@@ -42,6 +42,7 @@ static inline f32 degrees(f64 rad) { return (f32) (rad * RAD_TO_DEG); }
 vec2 vec2_add(vec2 a, vec2 b);
 vec2 vec2_sub(vec2 a, vec2 b);
 vec2 vec2_scale(vec2 a, f32 s);
+vec2 vec2_clamp(vec2 vec, rect quad);
 
 vec3 vec3_add(vec3 a, vec3 b);
 vec3 vec3_sub(vec3 a, vec3 b);
@@ -73,5 +74,12 @@ mat4 mat4_transpose(mat4 a);
 
 mat4 mat4_translate(vec3 v);
 mat4 mat4_ortho(f32 left, f32 right, f32 top, f32 bottom, f32 near, f32 far);
+
+//~ Rect Functions
+
+b8   rect_overlaps(rect a, rect b);
+b8   rect_contained_by_rect(rect a, rect b);
+rect rect_get_overlap(rect a, rect b);
+rect rect_uv_cull(rect pos, rect uv, rect quad);
 
 #endif //VMATH_H

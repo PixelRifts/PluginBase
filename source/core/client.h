@@ -6,7 +6,7 @@
 //~ Plugin Stuff
 
 typedef void* PluginInitProcedure();
-typedef void PluginUpdateProcedure(void* context);
+typedef void PluginUpdateProcedure(void* context, I_InputState* input);
 typedef void PluginRenderProcedure(void* context, D_Drawer* drawer);
 typedef void PluginFreeProcedure(void* context);
 
@@ -64,7 +64,7 @@ typedef struct C_ClientState {
 } C_ClientState;
 
 void C_Init(C_ClientState* cstate);
-void C_Update();
+void C_Update(I_InputState* input);
 void C_Render(D_Drawer* drawer);
 void C_Shutdown();
 

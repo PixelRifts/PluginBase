@@ -1,4 +1,5 @@
 #include <math.h>
+#include <stdio.h>
 
 void animate_f32exp(f32* val, f32 target, f32 speed, f32 dt) {
     f32 delta = target - (*val);
@@ -15,6 +16,13 @@ vec2 vec2_sub(vec2 a, vec2 b) {
 
 vec2 vec2_scale(vec2 a, f32 s) {
     return (vec2) { .x = a.x * s, .y = a.y * s };
+}
+
+vec2 vec2_clamp(vec2 vec, rect quad) {
+    return (vec2) {
+        .x = Clamp(quad.x, vec.x, quad.x + quad.w),
+        .y = Clamp(quad.y, vec.y, quad.y + quad.h)
+    };
 }
 
 vec3 vec3_add(vec3 a, vec3 b) {
@@ -195,4 +203,40 @@ mat4 mat4_ortho(f32 left, f32 right, f32 top, f32 bottom, f32 near, f32 far) {
             0.f,         0.f,          0.f,          1.f,
         }
     };
+}
+
+b8 rect_overlaps(rect a, rect b) {
+    b8 x = (a.x >= b.x && a.x <= b.x + b.w) || (a.x + a.w >= b.x && a.x + a.w <= b.x + b.w) || (a.x <= b.x && a.x + a.w >= b.x + b.w);
+    b8 y = (a.y >= b.y && a.y <= b.y + b.h) || (a.y + a.h >= b.y && a.y + a.h <= b.y + b.h) || (a.y <= b.y && a.y + a.h >= b.y + b.h);
+    return x && y;
+}
+
+b8 rect_contained_by_rect(rect a, rect b) {
+    b8 x = (a.x >= b.x && a.x <= b.x + b.w) && (a.x + a.w >= b.x && a.x + a.w <= b.x + b.w);
+    b8 y = (a.y >= b.y && a.y <= b.y + b.h) && (a.y + a.h >= b.y && a.y + a.h <= b.y + b.h);
+    return x && y;
+}
+
+rect rect_get_overlap(rect a, rect b) {
+    vec2 min = (vec2) { Max(a.x, b.x), Max(a.y, b.y) };
+    vec2 max = (vec2) { Min(a.x + a.w, b.x + b.w), Min(a.y + a.h, b.y + b.h) };
+    return (rect) { min.x, min.y, max.x - min.x, max.y - min.y, };
+}
+
+rect rect_uv_cull(rect pos, rect uv, rect quad) {
+    if (!rect_overlaps(pos, quad) || rect_contained_by_rect(pos, quad)) {
+        return uv;
+    }
+    
+    b8 x_shift_constant = !(pos.x >= quad.x && pos.x <= quad.x + quad.w);
+    b8 y_shift_constant = !(pos.y >= quad.y && pos.y <= quad.y + quad.h);
+    
+    f32 uv_xratio = uv.w / pos.w;
+    f32 uv_yratio = uv.h / pos.h;
+    rect overlap = rect_get_overlap(pos, quad);
+    f32 culled_x = uv.x + (pos.w - overlap.w) * uv_xratio * x_shift_constant;
+    f32 culled_y = uv.y + (pos.h - overlap.h) * uv_yratio * y_shift_constant;
+    f32 culled_w = overlap.w * uv_xratio;
+    f32 culled_h = overlap.h * uv_yratio;
+    return (rect) { culled_x, culled_y, culled_w, culled_h };
 }
