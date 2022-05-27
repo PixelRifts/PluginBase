@@ -3,6 +3,9 @@
 #ifndef DS_H
 #define DS_H
 
+#include <stdlib.h>
+#include <string.h>
+
 #define DoubleCapacity(x) ((x) <= 0 ? 8 : x * 2)
 
 #define Iterate(array, var) for (int var = 0; var < array.len; var++)
@@ -46,8 +49,61 @@ return value;\
 void Name##_free(Name* array) {\
 array->cap = 0;\
 array->len = 0;\
-free(array->elems);\
+if (array->elems) free(array->elems);\
+array->elems = nullptr;\
 }
+
+#define Set_Prototype(Name, Data)\
+typedef struct Name {\
+u32 cap;\
+u32 len;\
+Data* elems;\
+} Name;\
+void Name##_add(Name* array, Data data);\
+Data Name##_remove(Name* array, Data elem);\
+void Name##_free(Name* array);
+
+#define Set_Impl(Name, Data, data_equals)\
+void Name##_add(Name* array, Data data) {\
+for (u32 k = 0; k < array->len; k++) {\
+if (data_equals(array->elems[k], data)) {\
+return;\
+}\
+}\
+if (array->len + 1 > array->cap) {\
+void* prev = array->elems;\
+u32 new_cap = DoubleCapacity(array->cap);\
+array->elems = calloc(new_cap, sizeof(Data));\
+memmove(array->elems, prev, array->len * sizeof(Data));\
+array->cap = new_cap;\
+free(prev);\
+}\
+array->elems[array->len++] = data;\
+}\
+Data Name##_remove(Name* array, Data elem) {\
+for (u32 k = 0; k < array->len; k++) {\
+if (data_equals(array->elems[k], elem)) {\
+Data value = array->elems[k];\
+if (k == array->len - 1) {\
+array->len--;\
+return value;\
+}\
+Data* from = array->elems + k + 1;\
+Data* to = array->elems + k;\
+memmove(to, from, sizeof(Data) * (array->len - k - 1));\
+array->len--;\
+return value;\
+}\
+}\
+return (Data) {0};\
+}\
+void Name##_free(Name* array) {\
+array->cap = 0;\
+array->len = 0;\
+if (array->elems) free(array->elems);\
+array->elems = nullptr;\
+}
+
 
 #define Stack_Prototype(Name, Data)\
 typedef struct Name {\

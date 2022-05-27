@@ -6,7 +6,7 @@ Array_Impl(plugin_array, C_Plugin);
 static C_ClientState* _client_state;
 
 C_Panel* C_PanelAlloc(M_Arena* arena, rect bounds, rect target) {
-    C_Panel* panel = arena_alloc(arena, sizeof(C_Panel));
+    C_Panel* panel = arena_alloc_zero(arena, sizeof(C_Panel));
     panel->bounds = bounds;
     panel->target_bounds = target;
     panel->is_leaf = true;
@@ -79,6 +79,16 @@ void C_PanelRender(D_Drawer* drawer, C_Panel* panel) {
         if (panel->content.render) panel->content.render(panel->context, drawer);
         D_PopCullRect(drawer, old_cull);
         D_PopOffset(drawer, old);
+        
+        
+        rect panel_lister_rect = {
+            panel->bounds.x + (panel->bounds.w / 2.f) - (panel->bounds.w / 2.5f),
+            panel->bounds.y + (panel->bounds.h / 10.0f),
+            (panel->bounds.w / 2.5f) * 2.f,
+            panel->bounds.h  - (panel->bounds.y + 2 * (panel->bounds.h / 10.f)),
+        };
+        
+        L_ListerRender(&panel->lister, drawer, &_client_state->finfo, panel_lister_rect);
         
     } else {
         C_PanelRender(drawer, panel->a);
@@ -154,37 +164,6 @@ void C_PanelResize(C_Panel* panel, rect new_bounds) {
     }
 }
 
-void C_Init(C_ClientState* cstate) {
-    _client_state = cstate;
-    
-    arena_init(&_client_state->arena);
-    _client_state->root = C_PanelAlloc(&_client_state->arena, (rect) { 0.f, 0.f, 1080.f, 720.f }, (rect) { 0.f, 0.f, 1080.f, 720.f });
-    
-    M_Scratch scratch = scratch_get();
-    OS_FileIterator iterator = OS_FileIterInit(str_lit("plugins"));
-    string name; OS_FileProperties props;
-    while (OS_FileIterNext(&scratch.arena, &iterator, &name, &props)) {
-        u64 last_dot = str_find_last(name, str_lit("."), 0);
-        string ext = { name.str + last_dot, name.size - last_dot };
-        if (str_eq(ext, str_lit("dll"))) {
-            OS_Library lib = OS_LibraryLoad(str_cat(&scratch.arena, str_lit("plugins/"), name));
-            
-            PluginInitProcedure* init_proc = (PluginInitProcedure*) OS_LibraryGetFunction(lib, "Init");
-            PluginUpdateProcedure* update_proc = (PluginUpdateProcedure*) OS_LibraryGetFunction(lib, "Update");
-            PluginRenderProcedure* render_proc = (PluginRenderProcedure*) OS_LibraryGetFunction(lib, "Render");
-            PluginFreeProcedure* free_proc = (PluginFreeProcedure*) OS_LibraryGetFunction(lib, "Free");
-            
-            C_Plugin plugin = { lib, init_proc, update_proc, render_proc, free_proc };
-            
-            plugin_array_add(&_client_state->plugins, plugin);
-        }
-    }
-    OS_FileIterEnd(&iterator);
-    _client_state->root->content = _client_state->plugins.elems[0];
-    _client_state->root->context = _client_state->root->content.init();
-    
-    scratch_return(&scratch);
-}
 
 static b32 ValidateSiblingSurviving(C_Panel* panel) {
     if (!panel->parent) return true;
@@ -207,8 +186,60 @@ static void PanelUpdate(C_Panel* panel, I_InputState* input) {
     if (!panel->is_leaf) {
         PanelUpdate(panel->a, input);
         PanelUpdate(panel->b, input);
-    } else 
-        if (panel->content.update) panel->content.update(panel->context, input);
+    } else  {
+        if (panel->content.update) {
+            if (panel->content.update)
+                panel->content.update(panel->context, input);
+            
+            if (_client_state->selected == panel) {
+                if (!panel->lister.visible) {
+                    if (panel->content.focused_update)
+                        panel->content.focused_update(panel->context, input);
+                }
+                
+                L_ListerUpdate(&panel->lister, input);
+            }
+        }
+    }
+}
+
+
+//~ Main Stuff
+
+void C_Init(C_ClientState* cstate) {
+    _client_state = cstate;
+    D_LoadFont(&_client_state->finfo, str_lit("res/Inconsolata.ttf"), 22);
+    
+    arena_init(&_client_state->arena);
+    _client_state->root = C_PanelAlloc(&_client_state->arena, (rect) { 0.f, 0.f, 1080.f, 720.f }, (rect) { 0.f, 0.f, 1080.f, 720.f });
+    
+    M_Scratch scratch = scratch_get();
+    OS_FileIterator iterator = OS_FileIterInit(str_lit("plugins"));
+    string name; OS_FileProperties props;
+    while (OS_FileIterNext(&scratch.arena, &iterator, &name, &props)) {
+        u64 last_dot = str_find_last(name, str_lit("."), 0);
+        string ext = { name.str + last_dot, name.size - last_dot };
+        if (str_eq(ext, str_lit("dll"))) {
+            OS_Library lib = OS_LibraryLoad(str_cat(&scratch.arena, str_lit("plugins/"), name));
+            
+            PluginInitProcedure* init_proc = (PluginInitProcedure*) OS_LibraryGetFunction(lib, "Init");
+            PluginUpdateProcedure* update_proc = (PluginUpdateProcedure*) OS_LibraryGetFunction(lib, "Update");
+            PluginFocusedUpdateProcedure* focused_update_proc = (PluginFocusedUpdateProcedure*) OS_LibraryGetFunction(lib, "FocusedUpdate");
+            PluginRenderProcedure* render_proc = (PluginRenderProcedure*) OS_LibraryGetFunction(lib, "Render");
+            PluginFreeProcedure* free_proc = (PluginFreeProcedure*) OS_LibraryGetFunction(lib, "Free");
+            
+            C_Plugin plugin = { lib, init_proc, update_proc, focused_update_proc, render_proc, free_proc };
+            
+            plugin_array_add(&_client_state->plugins, plugin);
+            string_array_add(&_client_state->options, name);
+        }
+    }
+    OS_FileIterEnd(&iterator);
+    
+    _client_state->root->content = _client_state->plugins.elems[0];
+    _client_state->root->context = _client_state->root->content.init();
+    
+    scratch_return(&scratch);
 }
 
 void C_Update(I_InputState* input) {
@@ -245,6 +276,18 @@ void C_Update(I_InputState* input) {
     Refill(_client_state->root);
     
     _client_state->selected = _client_state->panels.elems[_client_state->selected_index];
+    
+    if (I_Key(input, GLFW_KEY_LEFT_ALT) || I_Key(input, GLFW_KEY_RIGHT_ALT)) {
+        if (I_KeyPressed(input, GLFW_KEY_X)) {
+            L_ListerInit(&_client_state->selected->lister, _client_state->options);
+            _client_state->selected->lister.visible = true;
+        }
+    }
+    if (I_KeyPressed(input, GLFW_KEY_ESCAPE)) {
+        _client_state->selected->lister.visible = false;
+        L_ListerFree(&_client_state->selected->lister);
+    }
+    
     C_PanelUpdate(_client_state->root);
     PanelUpdate(_client_state->root, input);
 }
@@ -254,11 +297,11 @@ void C_Render(D_Drawer* drawer) {
 }
 
 void C_Shutdown() {
-    if (_client_state->root->content.free && _client_state->root->context) {
-        _client_state->root->content.free(_client_state->root->context);
-        _client_state->root->context = nullptr;
-    }
+    _client_state->root->content.free(_client_state->root->context);
+    D_FreeFont(&_client_state->finfo);
+    
     panel_array_free(&_client_state->panels);
     plugin_array_free(&_client_state->plugins);
+    string_array_free(&_client_state->options);
     arena_free(&_client_state->arena);
 }

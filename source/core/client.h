@@ -7,6 +7,7 @@
 
 typedef void* PluginInitProcedure();
 typedef void PluginUpdateProcedure(void* context, I_InputState* input);
+typedef void PluginFocusedUpdateProcedure(void* context, I_InputState* input);
 typedef void PluginRenderProcedure(void* context, D_Drawer* drawer);
 typedef void PluginFreeProcedure(void* context);
 
@@ -14,6 +15,7 @@ typedef struct C_Plugin {
     OS_Library lib;
     PluginInitProcedure* init;
     PluginUpdateProcedure* update;
+    PluginFocusedUpdateProcedure* focused_update;
     PluginRenderProcedure* render;
     PluginFreeProcedure* free;
 } C_Plugin;
@@ -41,6 +43,8 @@ struct C_Panel {
     
     C_Plugin content;
     void* context;
+    
+    L_Lister lister;
 };
 
 C_Panel* C_PanelAlloc(M_Arena* arena, rect bounds, rect target);
@@ -61,6 +65,8 @@ typedef struct C_ClientState {
     i32 selected_index;
     panel_array panels;
     plugin_array plugins;
+    string_array options;
+    D_FontInfo finfo;
 } C_ClientState;
 
 void C_Init(C_ClientState* cstate);

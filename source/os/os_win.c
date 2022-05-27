@@ -266,6 +266,13 @@ b32 OS_FileWrite(string filename, string data) {
     return result;
 }
 
+void OS_FileOpen(string filename) {
+    M_Scratch scratch = scratch_get();
+    string_utf16 filename16 = str16_from_str8(&scratch.arena, filename);
+    ShellExecuteW(nullptr, nullptr, (WCHAR*) filename16.str, nullptr, nullptr, SW_SHOWNORMAL);
+    scratch_return(&scratch);
+}
+
 b32 OS_FileDelete(string filename) {
     M_Scratch scratch = scratch_get();
     string_utf16 filename16 = str16_from_str8(&scratch.arena, filename);
@@ -275,7 +282,6 @@ b32 OS_FileDelete(string filename) {
 }
 
 //~ File Properties
-
 
 static U_DateTime w32_date_time_from_system_time(SYSTEMTIME* in){
     U_DateTime result = {};
@@ -355,6 +361,14 @@ b32 OS_FileDeleteDir(string dirname) {
     b32 result = RemoveDirectoryW((WCHAR*) dirname16.str);
     scratch_return(&scratch);
     return result;
+}
+
+void OS_FileOpenDir(string dirname) {
+    M_Scratch scratch = scratch_get();
+    string_utf16 dirname16 = str16_from_str8(&scratch.arena, dirname);
+    string_utf16 explore = str16_from_str8(&scratch.arena, str_lit("explore"));
+    ShellExecuteW(nullptr, (WCHAR*) explore.str, (WCHAR*) dirname16.str, nullptr, nullptr, SW_SHOWNORMAL);
+    scratch_return(&scratch);
 }
 
 //~ File Iterator

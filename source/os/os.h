@@ -28,11 +28,13 @@ b32    OS_FileCreateWrite(string filename, string data);
 b32    OS_FileCreateWrite_List(string filename, string_list data);
 b32    OS_FileWrite(string filename, string data);
 b32    OS_FileWrite_List(string filename, string_list data);
+void   OS_FileOpen(string filename);
 
 b32    OS_FileDelete(string filename);
 
 b32    OS_FileCreateDir(string dirname);
 b32    OS_FileDeleteDir(string dirname);
+void   OS_FileOpenDir(string dirname);
 
 //~ Utility Paths
 

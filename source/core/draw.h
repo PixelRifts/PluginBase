@@ -3,8 +3,6 @@
 #ifndef DRAW_H
 #define DRAW_H
 
-#define D_MAX_BATCHES 16
-
 #include <stb/stb_truetype.h>
 
 typedef struct D_Batch {
@@ -12,6 +10,8 @@ typedef struct D_Batch {
     R_Texture textures[8];
     u8 tex_count;
 } D_Batch;
+
+Array_Prototype(D_BatchArray, D_Batch);
 
 typedef struct D_FontInfo {
     R_Texture font_texture;
@@ -25,7 +25,7 @@ typedef struct D_FontInfo {
 typedef struct D_Drawer {
     M_Arena arena;
     
-    D_Batch batches[D_MAX_BATCHES];
+    D_BatchArray batches;
     u8 current_batch;
     u8 initialized_batches;
     rect cull_quad;
@@ -51,8 +51,10 @@ dll_plugin_api void D_DrawQuadST(D_Drawer* _draw2d_state, rect quad, R_Texture t
 
 dll_plugin_api void D_DrawString(D_Drawer* _draw2d_state, D_FontInfo* fontinfo, vec2 pos, string str);
 dll_plugin_api void D_DrawStringC(D_Drawer* _draw2d_state, D_FontInfo* fontinfo, vec2 pos, string str, vec4 color);
+dll_plugin_api f32 D_GetStringSize(D_FontInfo* fontinfo, string str);
 
-void D_SetFont(D_FontInfo* fontinfo, string filename, f32 size);
+void D_LoadFont(D_FontInfo* fontinfo, string filename, f32 size);
+void D_FreeFont(D_FontInfo* font);
 
 void D_BeginDraw(D_Drawer* _draw2d_state);
 void D_EndDraw(D_Drawer* _draw2d_state);

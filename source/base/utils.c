@@ -60,7 +60,7 @@ string U_FixFilepath(M_Arena* arena, string filepath) {
         memcpy(fixed.str, old.str, last_slash);
         memcpy(fixed.str + last_slash, old.str + dotdot + 3, old.size - range - last_slash + 1);
     }
-    
+    fixed = str_copy(arena, fixed);
     scratch_return(&scratch);
     
     return fixed;

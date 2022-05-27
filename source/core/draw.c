@@ -3,8 +3,12 @@
 #include <stdio.h>
 #include <assert.h>
 
+Array_Impl(D_BatchArray, D_Batch);
+
 static D_Batch* D_NextBatch(D_Drawer* _draw2d_state) {
-    D_Batch* next = &_draw2d_state->batches[++_draw2d_state->current_batch];
+    D_BatchArray_add(&_draw2d_state->batches, (D_Batch) {0});
+    D_Batch* next = &_draw2d_state->batches.elems[++_draw2d_state->current_batch];
+    
     if (_draw2d_state->current_batch >= _draw2d_state->initialized_batches) {
         next->cache = R_VertexCacheCreate(&_draw2d_state->arena, R_MAX_INTERNAL_CACHE_VCOUNT);
         _draw2d_state->initialized_batches++;
@@ -14,7 +18,7 @@ static D_Batch* D_NextBatch(D_Drawer* _draw2d_state) {
 
 static b8 D_BatchCanAddTexture(D_Drawer* _draw2d_state, D_Batch* batch, R_Texture texture) {
     if (batch->tex_count < 8) return true;
-    for (u8 i = 0; i < 8; i++) {
+    for (u8 i = 0; i < batch->tex_count; i++) {
         if (batch->textures[i] == texture)
             return true;
     }
@@ -22,7 +26,7 @@ static b8 D_BatchCanAddTexture(D_Drawer* _draw2d_state, D_Batch* batch, R_Textur
 }
 
 static u8 D_BatchAddTexture(D_Drawer* _draw2d_state, D_Batch* batch, R_Texture tex) {
-    for (u8 i = 0; i < 8; i++) {
+    for (u8 i = 0; i < batch->tex_count; i++) {
         if (batch->textures[i] == tex)
             return i;
     }
@@ -31,7 +35,7 @@ static u8 D_BatchAddTexture(D_Drawer* _draw2d_state, D_Batch* batch, R_Texture t
 }
 
 static D_Batch* D_GetCurrentBatch(D_Drawer* _draw2d_state, int num_verts, R_Texture tex) {
-    D_Batch* batch = &_draw2d_state->batches[_draw2d_state->current_batch];
+    D_Batch* batch = &_draw2d_state->batches.elems[_draw2d_state->current_batch];
     if (!D_BatchCanAddTexture(_draw2d_state, batch, tex) || batch->cache.count + num_verts >= batch->cache.max_verts)
         batch = D_NextBatch(_draw2d_state);
     return batch;
@@ -44,8 +48,8 @@ void D_Init(D_Drawer* _draw2d_state) {
     _draw2d_state->current_batch = 0;
     _draw2d_state->cull_quad = (rect) { 0, 0, 1080, 720 }; // @resize CULLQUAD
     _draw2d_state->offset = (vec2) { 0.f, 0.f };
-    _draw2d_state->batches[_draw2d_state->current_batch] = (D_Batch) {0};
-    _draw2d_state->batches[_draw2d_state->current_batch].cache = R_VertexCacheCreate(&_draw2d_state->arena, R_MAX_INTERNAL_CACHE_VCOUNT);
+    D_BatchArray_add(&_draw2d_state->batches, (D_Batch) {0});
+    _draw2d_state->batches.elems[_draw2d_state->current_batch].cache = R_VertexCacheCreate(&_draw2d_state->arena, R_MAX_INTERNAL_CACHE_VCOUNT);
     _draw2d_state->white = R_TextureCreateWhite();
 }
 
@@ -182,7 +186,18 @@ dll_plugin_api void D_DrawString(D_Drawer* _draw2d_state, D_FontInfo* fontinfo, 
     }
 }
 
-void D_SetFont(D_FontInfo* fontinfo, string filename, f32 size) {
+dll_plugin_api f32 D_GetStringSize(D_FontInfo* fontinfo, string str) {
+    f32 sz = 0.f;
+    for (u32 i = 0; i < str.size; i++) {
+        if (str.str[i] >= 32 && str.str[i] < 128) {
+            stbtt_packedchar* info = &fontinfo->cdata[str.str[i] - 32];
+            sz += info->xadvance;
+        }
+    }
+    return sz;
+}
+
+void D_LoadFont(D_FontInfo* fontinfo, string filename, f32 size) {
     if (fontinfo->font_texture) glDeleteTextures(1, &fontinfo->font_texture);
     
     FILE* ttfile = fopen((char*)filename.str, "rb");
@@ -217,19 +232,24 @@ void D_SetFont(D_FontInfo* fontinfo, string filename, f32 size) {
     fontinfo->baseline = (i32) (fontinfo->ascent * fontinfo->scale);
 }
 
+void D_FreeFont(D_FontInfo* font) {
+    glDeleteTextures(1, &font->font_texture);
+}
+
 void D_BeginDraw(D_Drawer* _draw2d_state) {
     R_BeginRenderOpenGL(&_draw2d_state->renderer);
     for (u8 i = 0; i < _draw2d_state->initialized_batches; i++) {
-        R_VertexCacheReset(&_draw2d_state->batches[i].cache);
-        _draw2d_state->batches[i].tex_count = 0;
+        R_VertexCacheReset(&_draw2d_state->batches.elems[i].cache);
+        _draw2d_state->batches.elems[i].tex_count = 0;
     }
+    _draw2d_state->current_batch = 0;
 }
 
 void D_EndDraw(D_Drawer* _draw2d_state) {
     for (u8 i = 0; i <= _draw2d_state->current_batch; i++) {
-        for (u8 t = 0; t < 8; t++)
-            R_TextureBind(_draw2d_state->batches[i].textures[t], t);
+        for (u8 t = 0; t < _draw2d_state->batches.elems[i].tex_count; t++)
+            R_TextureBind(_draw2d_state->batches.elems[i].textures[t], t);
         
-        R_VertexCacheRender(&_draw2d_state->batches[i].cache);
+        R_VertexCacheRender(&_draw2d_state->batches.elems[i].cache);
     }
 }

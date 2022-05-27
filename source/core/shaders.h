@@ -73,6 +73,5 @@ const char* f_src = "#version 330 core\n"
 "        case 7: f_color = v_color * texture(u_tex[7], v_texcoord); break;\n"
 "        default: discard;\n"
 "    }\n"
-"    f_color = vec4(v_texcoord, 0.0, 1.0);\n"
 "    f_color.a *= round_corners();\n"
 "}\n";

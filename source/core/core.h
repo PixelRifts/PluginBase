@@ -16,6 +16,7 @@
 #include "render.h"
 #include "draw.h"
 #include "input.h"
+#include "lister.h"
 #include "client.h"
 
 #endif //CORE_H

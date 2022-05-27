@@ -1,49 +1,23 @@
 
-inline static void I_SetPressedBit(I_InputState* input, u32 index) {
-    input->key_states[index] |= 0b00000001;
-}
-inline static void I_SetReleasedBit(I_InputState* input, u32 index) {
-    input->key_states[index] |= 0b00000010;
-}
-inline static void I_SetHeldBit(I_InputState* input, u32 index) {
-    input->key_states[index] |= 0b00000100;
-}
-
-inline static void I_ResetPressedBit(I_InputState* input, u32 index) {
-    input->key_states[index] &= 0b11111110;
-}
-inline static void I_ResetReleasedBit(I_InputState* input, u32 index) {
-    input->key_states[index] &= 0b11111101;
-}
-inline static void I_ResetHeldBit(I_InputState* input, u32 index) {
-    input->key_states[index] &= 0b11111011;
-}
-
 static void I_KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (key < 0 || key >= 350) return;
     
     I_InputState* input = glfwGetWindowUserPointer(window);
     switch (action) {
         case GLFW_PRESS: {
-            I_SetPressedBit(input, key);
-            I_ResetReleasedBit(input, key);
-            I_ResetHeldBit(input, key);
+            input->key_states[key] |= 0b00000001;
             
             input->key_held_state[key] = 1;
         } break;
         
         case GLFW_RELEASE: {
-            I_ResetPressedBit(input, key);
-            I_SetReleasedBit(input, key);
-            I_ResetHeldBit(input, key);
+            input->key_states[key] |= 0b00000010;
             
             input->key_held_state[key] = 0;
         } break;
         
         case GLFW_REPEAT: {
-            I_ResetPressedBit(input, key);
-            I_ResetReleasedBit(input, key);
-            I_SetHeldBit(input, key);
+            input->key_states[key] |= 0b00000100;
         } break;
     }
 }
@@ -76,7 +50,18 @@ void I_Reset(I_InputState* _input_state) {
     _input_state->mouse_scrolly = 0;
 }
 
-b32 I_Key(I_InputState* input, i32 key) { return input->key_held_state[key]; }
-b32 I_KeyPressed(I_InputState* input, i32 key) { return ((input->key_states[key] & 0b00000001) >> 0) != 0; }
-b32 I_KeyReleased(I_InputState* input, i32 key) { return ((input->key_states[key] & 0b00000010) >> 1) != 0; }
-b32 I_KeyHeld(I_InputState* input, i32 key) { return ((input->key_states[key] & 0b00000100) >> 2) != 0; }
+b32 I_Key(I_InputState* input, i32 key) {
+    return input->key_held_state[key];
+}
+
+b32 I_KeyPressed(I_InputState* input, i32 key) {
+    return ((input->key_states[key] & 0b00000001) >> 0) != 0;
+}
+
+b32 I_KeyReleased(I_InputState* input, i32 key) {
+    return ((input->key_states[key] & 0b00000010) >> 1) != 0;
+}
+
+b32 I_KeyHeld(I_InputState* input, i32 key) {
+    return ((input->key_states[key] & 0b00000100) >> 2) != 0;
+}
