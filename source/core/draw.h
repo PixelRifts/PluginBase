@@ -17,6 +17,7 @@ typedef struct D_FontInfo {
     R_Texture font_texture;
     stbtt_packedchar cdata[95];
     f32 scale;
+    f32 font_size;
     i32 ascent;
     i32 descent;
     i32 baseline;

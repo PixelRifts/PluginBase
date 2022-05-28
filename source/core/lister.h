@@ -10,8 +10,8 @@ typedef struct L_Lister {
 } L_Lister;
 
 void L_ListerInit(L_Lister* lister, string_array options);
-void L_ListerUpdate(L_Lister* lister, I_InputState* input);
-void L_ListerRender(L_Lister* lister, D_Drawer* drawer, D_FontInfo* font, rect draw_area);
+i32  L_ListerUpdate(L_Lister* lister, I_InputState* input);
+void L_ListerRender(L_Lister* lister, D_Drawer* drawer, D_FontInfo* font, rect draw_area, b8 is_on_focused_panel);
 void L_ListerFree(L_Lister* lister);
 
 #endif //LISTER_H

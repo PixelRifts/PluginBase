@@ -79,10 +79,11 @@ void D_PopOffset(D_Drawer* _draw2d_state, vec2 old_offset) {
 }
 
 dll_plugin_api void D_DrawQuad(D_Drawer* _draw2d_state, rect quad, R_Texture texture, rect uvs, vec4 color, f32 rounding)  {
-    if (!rect_overlaps(quad, _draw2d_state->cull_quad)) return;
-    
     quad.x += _draw2d_state->offset.x;
     quad.y += _draw2d_state->offset.y;
+    
+    if (!rect_overlaps(quad, _draw2d_state->cull_quad)) return;
+    
     D_Batch* batch = D_GetCurrentBatch(_draw2d_state, 6, texture);
     int idx = D_BatchAddTexture(_draw2d_state, batch, texture);
     rect uv_culled = rect_uv_cull(quad, uvs, _draw2d_state->cull_quad);
@@ -230,6 +231,7 @@ void D_LoadFont(D_FontInfo* fontinfo, string filename, f32 size) {
     fontinfo->scale = stbtt_ScaleForPixelHeight(&finfo, size);
     stbtt_GetFontVMetrics(&finfo, &fontinfo->ascent, &fontinfo->descent, nullptr);
     fontinfo->baseline = (i32) (fontinfo->ascent * fontinfo->scale);
+    fontinfo->font_size = size;
 }
 
 void D_FreeFont(D_FontInfo* font) {

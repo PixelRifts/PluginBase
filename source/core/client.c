@@ -30,6 +30,11 @@ void C_PanelChop(M_Arena* arena, C_Panel* parent_panel, C_PanelChopDir chop_dir)
         
         ap->content = parent_panel->content;
         ap->context = parent_panel->context;
+        
+        if (parent_panel->lister.visible) {
+            L_ListerInit(&ap->lister, _client_state->options);
+            ap->lister.visible = true;
+        }
     } else if (chop_dir == PanelChop_Vertical) {
         rect a = parent_panel->target_bounds, b = parent_panel->target_bounds;
         a.w = parent_panel->target_bounds.w / 2.f - 0.5f;
@@ -44,18 +49,47 @@ void C_PanelChop(M_Arena* arena, C_Panel* parent_panel, C_PanelChopDir chop_dir)
         
         ap->content = parent_panel->content;
         ap->context = parent_panel->context;
+        
+        if (parent_panel->lister.visible) {
+            L_ListerInit(&ap->lister, _client_state->options);
+            ap->lister.visible = true;
+        }
     }
 }
 
-b32 C_PanelUpdate(C_Panel* panel) {
+b32 C_PanelUpdate(C_Panel* panel, I_InputState* input) {
     animate_f32exp(&panel->bounds.x, panel->target_bounds.x, 0.04f, 1.0f);
     animate_f32exp(&panel->bounds.y, panel->target_bounds.y, 0.04f, 1.0f);
     animate_f32exp(&panel->bounds.w, panel->target_bounds.w, 0.04f, 1.0f);
     animate_f32exp(&panel->bounds.h, panel->target_bounds.h, 0.04f, 1.0f);
     
     if (!panel->is_leaf) {
-        if (C_PanelUpdate(panel->a)) return false;
-        if (C_PanelUpdate(panel->b)) return false;
+        if (C_PanelUpdate(panel->a, input)) return false;
+        if (C_PanelUpdate(panel->b, input)) return false;
+    }
+    
+    if (panel->content.update)
+        panel->content.update(panel->context, input);
+    
+    if (_client_state->selected == panel) {
+        if (!panel->lister.visible) {
+            if (panel->content.focused_update)
+                panel->content.focused_update(panel->context, input);
+        }
+        
+        i32 pick = L_ListerUpdate(&panel->lister, input);
+        if (pick != -1) {
+            if (panel->content.free)
+                panel->content.free(panel->context);
+            panel->context = nullptr;
+            
+            panel->content = _client_state->plugins.elems[pick];
+            if (panel->content.init)
+                panel->context = panel->content.init(panel->context);
+            
+            L_ListerFree(&panel->lister);
+            panel->lister.visible = false;
+        }
     }
     
     if (panel->test_close_to_zero) {
@@ -71,8 +105,8 @@ b32 C_PanelUpdate(C_Panel* panel) {
 void C_PanelRender(D_Drawer* drawer, C_Panel* panel) {
     if (panel->is_leaf) {
         if (_client_state->selected == panel) { 
-            D_DrawQuadC(drawer, panel->bounds, (vec4) { 0.23f, 0.23f, 0.23f, 1.0f }, 10);
-        } else D_DrawQuadC(drawer, panel->bounds, (vec4) { 0.2f, 0.2f, 0.2f, 1.0f }, 10);
+            D_DrawQuadC(drawer, panel->bounds, (vec4) { 0.15f, 0.15f, 0.15f, 1.0f }, 10);
+        } else D_DrawQuadC(drawer, panel->bounds, (vec4) { 0.13f, 0.13f, 0.13f, 1.0f }, 10);
         
         vec2 old = D_PushOffset(drawer, (vec2) { panel->bounds.x, panel->bounds.y });
         rect old_cull = D_PushCullRect(drawer, panel->bounds);
@@ -80,15 +114,14 @@ void C_PanelRender(D_Drawer* drawer, C_Panel* panel) {
         D_PopCullRect(drawer, old_cull);
         D_PopOffset(drawer, old);
         
-        
         rect panel_lister_rect = {
             panel->bounds.x + (panel->bounds.w / 2.f) - (panel->bounds.w / 2.5f),
             panel->bounds.y + (panel->bounds.h / 10.0f),
-            (panel->bounds.w / 2.5f) * 2.f,
-            panel->bounds.h  - (panel->bounds.y + 2 * (panel->bounds.h / 10.f)),
+            panel->bounds.w / 1.25f,
+            panel->bounds.h  - (panel->bounds.h / 5.f),
         };
         
-        L_ListerRender(&panel->lister, drawer, &_client_state->finfo, panel_lister_rect);
+        L_ListerRender(&panel->lister, drawer, &_client_state->finfo, panel_lister_rect, _client_state->selected == panel);
         
     } else {
         C_PanelRender(drawer, panel->a);
@@ -139,7 +172,7 @@ void C_PanelClose(C_Panel* panel) {
     }
     
     C_PanelResize(panel, target_copy);
-    C_PanelResize(sibling, panel->parent->bounds);
+    C_PanelResize(sibling, panel->parent->target_bounds);
 }
 
 void C_PanelResize(C_Panel* panel, rect new_bounds) {
@@ -165,6 +198,16 @@ void C_PanelResize(C_Panel* panel, rect new_bounds) {
 }
 
 
+void C_PanelFreeAll(C_Panel* panel) {
+    if (panel->is_leaf) {
+        if (panel->content.free)
+            panel->content.free(panel->context);
+    } else {
+        C_PanelFreeAll(panel->a);
+        C_PanelFreeAll(panel->b);
+    }
+}
+
 static b32 ValidateSiblingSurviving(C_Panel* panel) {
     if (!panel->parent) return true;
     C_Panel* sibling = panel->parent->a == panel ? panel->parent->b : panel->parent->a;
@@ -181,28 +224,6 @@ static void Refill(C_Panel* panel) {
         Refill(panel->b);
     }
 }
-
-static void PanelUpdate(C_Panel* panel, I_InputState* input) {
-    if (!panel->is_leaf) {
-        PanelUpdate(panel->a, input);
-        PanelUpdate(panel->b, input);
-    } else  {
-        if (panel->content.update) {
-            if (panel->content.update)
-                panel->content.update(panel->context, input);
-            
-            if (_client_state->selected == panel) {
-                if (!panel->lister.visible) {
-                    if (panel->content.focused_update)
-                        panel->content.focused_update(panel->context, input);
-                }
-                
-                L_ListerUpdate(&panel->lister, input);
-            }
-        }
-    }
-}
-
 
 //~ Main Stuff
 
@@ -228,16 +249,19 @@ void C_Init(C_ClientState* cstate) {
             PluginRenderProcedure* render_proc = (PluginRenderProcedure*) OS_LibraryGetFunction(lib, "Render");
             PluginFreeProcedure* free_proc = (PluginFreeProcedure*) OS_LibraryGetFunction(lib, "Free");
             
-            C_Plugin plugin = { lib, init_proc, update_proc, focused_update_proc, render_proc, free_proc };
+            PluginGlobalInitProcedure* global_init_proc = (PluginGlobalInitProcedure*) OS_LibraryGetFunction(lib, "GlobalInit");
+            PluginGlobalFreeProcedure* global_free_proc = (PluginGlobalFreeProcedure*) OS_LibraryGetFunction(lib, "GlobalFree");
+            
+            C_Plugin plugin = { lib, global_init_proc, global_free_proc, init_proc, update_proc, focused_update_proc, render_proc, free_proc };
+            
+            if (global_init_proc) global_init_proc();
             
             plugin_array_add(&_client_state->plugins, plugin);
-            string_array_add(&_client_state->options, name);
+            string name_wo_extension = str_copy(&_client_state->arena, U_RemoveExtensionFromFilename(name));
+            string_array_add(&_client_state->options, name_wo_extension);
         }
     }
     OS_FileIterEnd(&iterator);
-    
-    _client_state->root->content = _client_state->plugins.elems[0];
-    _client_state->root->context = _client_state->root->content.init();
     
     scratch_return(&scratch);
 }
@@ -288,8 +312,7 @@ void C_Update(I_InputState* input) {
         L_ListerFree(&_client_state->selected->lister);
     }
     
-    C_PanelUpdate(_client_state->root);
-    PanelUpdate(_client_state->root, input);
+    C_PanelUpdate(_client_state->root, input);
 }
 
 void C_Render(D_Drawer* drawer) {
@@ -297,11 +320,14 @@ void C_Render(D_Drawer* drawer) {
 }
 
 void C_Shutdown() {
-    _client_state->root->content.free(_client_state->root->context);
-    D_FreeFont(&_client_state->finfo);
+    Iterate(_client_state->plugins, i) {
+        if (_client_state->plugins.elems[i].global_free)
+            _client_state->plugins.elems[i].global_free();
+    }
     
     panel_array_free(&_client_state->panels);
     plugin_array_free(&_client_state->plugins);
     string_array_free(&_client_state->options);
+    D_FreeFont(&_client_state->finfo);
     arena_free(&_client_state->arena);
 }

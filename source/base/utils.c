@@ -98,3 +98,8 @@ string U_GetDirectoryFromFilepath(string filepath) {
     if (last_slash == 0) last_slash = str_find_last(filepath, str_lit("\\"), 0);
     return (string) { .str = filepath.str, .size = last_slash - 1 };
 }
+
+string U_RemoveExtensionFromFilename(string filename) {
+    u64 last_dot = str_find_last(filename, str_lit("."), 0);
+    return (string) { .str = filename.str, .size = last_dot - 1 };
+}

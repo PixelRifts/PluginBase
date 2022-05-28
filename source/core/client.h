@@ -5,6 +5,8 @@
 
 //~ Plugin Stuff
 
+typedef void PluginGlobalInitProcedure();
+typedef void PluginGlobalFreeProcedure();
 typedef void* PluginInitProcedure();
 typedef void PluginUpdateProcedure(void* context, I_InputState* input);
 typedef void PluginFocusedUpdateProcedure(void* context, I_InputState* input);
@@ -13,6 +15,8 @@ typedef void PluginFreeProcedure(void* context);
 
 typedef struct C_Plugin {
     OS_Library lib;
+    PluginGlobalInitProcedure* global_init;
+    PluginGlobalFreeProcedure* global_free;
     PluginInitProcedure* init;
     PluginUpdateProcedure* update;
     PluginFocusedUpdateProcedure* focused_update;

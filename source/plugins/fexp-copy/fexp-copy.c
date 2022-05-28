@@ -99,7 +99,7 @@ dll_export void Render(void* context, D_Drawer* drawer) {
     while (OS_FileIterNext(&scratch.arena, &iter, &name, &props)) {
         f32 size = D_GetStringSize(&ctx->font, name);
         if (idx == ctx->selected_index) {
-            D_DrawQuadC(drawer, (rect) { 4, y - 16, 8 + size, 22 }, (vec4) { .3f, .3f, .3f, 1.f },
+            D_DrawQuadC(drawer, (rect) { 4, y - 16, 8 + size, 22 }, (vec4) { .5f, .5f, .5f, 1.f },
                         4.f);
         }
         D_DrawString(drawer, &ctx->font, (vec2) { 8, y }, name);

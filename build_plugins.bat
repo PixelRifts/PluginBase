@@ -7,3 +7,6 @@ SET custom_libs=-lmsvcrt -lshell32 -lwinmm -luser32 -luserenv -lgdi32 -Lthird_pa
 
 ECHO Building Plugin: fexp
 clang third_party/source/glad.c source/plugins/fexp/fexp.c %include_flags% %compiler_flags% %defines% -shared %custom_libs% -o plugins/fexp.dll
+
+ECHO Building Plugin: fexp-copy
+clang third_party/source/glad.c source/plugins/fexp-copy/fexp-copy.c %include_flags% %compiler_flags% %defines% -shared %custom_libs% -o plugins/fexp-copy.dll

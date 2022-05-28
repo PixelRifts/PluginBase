@@ -1,12 +1,12 @@
-/* date = April 12th 2022 6:58 pm */
+#ifndef _PLUGIN_H_
+#define _PLUGIN_H_
 
-#ifndef PLUGIN_H
-#define PLUGIN_H
+dll_export void GlobalInit() {
+    M_ScratchInit();
+}
 
-#include "core/core.h"
+dll_export void GlobalFree() {
+    M_ScratchFree();
+}
 
-Array_Prototype();
-
-D_FontInfo RequestFont(string filename);
-
-#endif //PLUGIN_H
+#endif // _PLUGIN_H_
