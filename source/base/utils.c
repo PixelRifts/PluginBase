@@ -81,6 +81,12 @@ string U_GetFullFilepath(M_Arena* arena, string filename) {
     return finalized;
 }
 
+string U_GetFullFilepathNoSlash(M_Arena* arena, string filename) {
+    string final = U_GetFullFilepath(arena, filename);
+    final.size--;
+    return final;
+}
+
 string U_GetFilenameFromFilepath(string filepath) {
     u64 last_slash = str_find_last(filepath, str_lit("/"), 0);
     

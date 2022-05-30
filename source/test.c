@@ -7,6 +7,15 @@
 #include "core/core.h"
 #include "base/ds.h"
 
+C_ClientState _client_state;
+D_Drawer drawer;
+
+void resize_callback(GLFWwindow* window, int w, int h) {
+    glViewport(0, 0, w, h);
+    C_PanelResize(_client_state.root, (rect) { 0.f, 0.f, (f32) w, (f32) h });
+    D_Resize(&drawer, (rect) { 0.f, 0.f, (f32) w, (f32) h });
+}
+
 int main(int argc, char** argv) {
     M_ScratchInit();
     OS_Init();
@@ -23,12 +32,14 @@ int main(int argc, char** argv) {
     I_InputState input = {0};
     I_Init(&input, window);
     glfwSetWindowUserPointer(window, &input);
+    glfwSetWindowSizeCallback(window, resize_callback);
+    I_RegisterKeyCallback(&input, C_KeyCallback);
     
-    D_Drawer drawer = {0};
+    drawer = (D_Drawer) {0};
     D_Init(&drawer);
     
-    C_ClientState client_state = {0};
-    C_Init(&client_state);
+    _client_state = (C_ClientState) {0};
+    C_Init(&_client_state);
     
     while (!glfwWindowShouldClose(window)) {
         I_Reset(&input);
@@ -45,6 +56,7 @@ int main(int argc, char** argv) {
     
     C_Shutdown();
     D_Shutdown(&drawer);
+    I_Free(&input);
     
     glfwDestroyWindow(window);
     glfwTerminate();

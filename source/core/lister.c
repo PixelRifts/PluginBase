@@ -7,9 +7,9 @@ void L_ListerInit(L_Lister* lister, string_array options) {
 i32 L_ListerUpdate(L_Lister* lister, I_InputState* input) {
     if (!lister->visible) return -1;
     
-    if (I_KeyPressed(input, GLFW_KEY_DOWN)) {
+    if (I_KeyPressed(input, GLFW_KEY_DOWN) || I_KeyHeld(input, GLFW_KEY_DOWN)) {
         lister->current_index++;
-    } else if (I_KeyPressed(input, GLFW_KEY_UP)) {
+    } else if (I_KeyPressed(input, GLFW_KEY_UP) || I_KeyHeld(input, GLFW_KEY_UP)) {
         lister->current_index--;
     }
     
@@ -32,7 +32,7 @@ void L_ListerRender(L_Lister* lister, D_Drawer* drawer, D_FontInfo* font, rect d
     
     {
         static const vec4 border_color = (vec4) { 1.f, 0.58f, 0.16f, 1.f };
-        static const f32 half_border_thickness = 3.f / 2.f;
+        static const f32 half_border_thickness = 1.5f;
         
         D_DrawQuadC(drawer, (rect) { draw_area.x - half_border_thickness, draw_area.y - half_border_thickness, half_border_thickness * 2, draw_area.h + half_border_thickness * 2 }, border_color, 0.2f);
         D_DrawQuadC(drawer, (rect) { draw_area.x + draw_area.w - half_border_thickness, draw_area.y - half_border_thickness, half_border_thickness * 2, draw_area.h + half_border_thickness * 2 }, border_color, 0.2f);

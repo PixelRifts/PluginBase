@@ -129,6 +129,13 @@ void R_ShutdownOpenGL(R_Renderer* _render_state) {
     arena_free(&_render_state->DefaultArena);
 }
 
+void R_ResizeProjection(R_Renderer* _render_state, rect new_rect) {
+    mat4 projection = mat4_transpose(mat4_ortho(new_rect.x, new_rect.x + new_rect.w, new_rect.y, new_rect.y + new_rect.h, -1, 1000));
+    glUseProgram(_render_state->program);
+    u32 loc = glGetUniformLocation(_render_state->program, "u_projection");
+    glUniformMatrix4fv(loc, 1, GL_FALSE, projection.a);
+}
+
 R_VertexCache R_VertexCacheCreate(M_Arena* arena, u32 max_verts) {
     return (R_VertexCache) {
         .vertices = arena_alloc(arena, sizeof(R_Vertex) * max_verts),

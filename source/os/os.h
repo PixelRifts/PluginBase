@@ -80,6 +80,7 @@ typedef struct OS_FileIterator {
 } OS_FileIterator;
 
 OS_FileIterator OS_FileIterInit(string path);
+OS_FileIterator OS_FileIterInitPattern(string path);
 b32  OS_FileIterNext(M_Arena* arena, OS_FileIterator* iter, string* name_out, OS_FileProperties* prop_out);
 void OS_FileIterEnd(OS_FileIterator* iter);
 

@@ -392,6 +392,18 @@ OS_FileIterator OS_FileIterInit(string path) {
     return result;
 }
 
+OS_FileIterator OS_FileIterInitPattern(string lookup) {
+    M_Scratch scratch = scratch_get();
+    
+    string_utf16 lookup16 = str16_from_str8(&scratch.arena, lookup);
+    OS_FileIterator result = {0};
+    W32_FileIter* w32_iter = (W32_FileIter*) &result;
+    w32_iter->handle = FindFirstFileW((WCHAR*) lookup16.str, &w32_iter->find_data);
+    
+    scratch_return(&scratch);
+    return result;
+}
+
 b32  OS_FileIterNext(M_Arena* arena, OS_FileIterator* iter, string* name_out, OS_FileProperties* prop_out) {
     b32 result = false;
     W32_FileIter* w32_iter = (W32_FileIter*) iter;
@@ -455,7 +467,9 @@ string OS_Filepath(M_Arena* arena, OS_SystemPath path) {
                 buffer = arena_alloc_array(&scratch.arena, u16, size + 1);
                 size = GetCurrentDirectoryW(size + 1, (WCHAR*) buffer);
             }
-            result = str8_from_str16(arena, (string_utf16) { buffer, size });
+            result = str8_from_str16(&scratch.arena, (string_utf16) { buffer, size });
+            result = str_replace_all(arena, result, str_lit("\\"), str_lit("/"));
+            
             scratch_return(&scratch);
         } break;
         
@@ -480,7 +494,7 @@ string OS_Filepath(M_Arena* arena, OS_SystemPath path) {
             
             string full_path = str8_from_str16(&scratch.arena, (string_utf16) { buffer, size });
             string binary_path = U_GetDirectoryFromFilepath(full_path);
-            result = str_copy(arena, binary_path);
+            result = str_replace_all(arena, binary_path, str_lit("\\"), str_lit("/"));
             
             scratch_return(&scratch);
         } break;
@@ -500,7 +514,8 @@ string OS_Filepath(M_Arena* arena, OS_SystemPath path) {
             }
             
             if (buffer) {
-                result = str8_from_str16(arena, str16_cstring(buffer));
+                result = str8_from_str16(&scratch.arena, str16_cstring(buffer));
+                result = str_replace_all(arena, result, str_lit("\\"), str_lit("/"));
             }
             
             scratch_return(&scratch);
@@ -516,7 +531,9 @@ string OS_Filepath(M_Arena* arena, OS_SystemPath path) {
                 buffer = arena_alloc_array(&scratch.arena, u16, size + 1);
                 size = GetTempPathW(size + 1, (WCHAR*)buffer);
             }
-            result = str8_from_str16(arena, (string_utf16) { buffer, size - 1 });
+            result = str8_from_str16(&scratch.arena, (string_utf16) { buffer, size - 1 });
+            result = str_replace_all(arena, result, str_lit("\\"), str_lit("/"));
+            
             scratch_return(&scratch);
         } break;
     }

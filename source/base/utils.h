@@ -24,6 +24,7 @@ U_DateTime  U_DateTimeFromDenseTime(U_DenseTime densetime);
 
 string U_FixFilepath(M_Arena* arena, string filepath);
 string U_GetFullFilepath(M_Arena* arena, string filename);
+string U_GetFullFilepathNoSlash(M_Arena* arena, string filename);
 string U_GetFilenameFromFilepath(string filepath);
 string U_GetDirectoryFromFilepath(string filepath);
 string U_RemoveExtensionFromFilename(string filename);

@@ -41,7 +41,9 @@ void string_array_free(string_const_array* array);
 #define str_lit(s) (string_const) { .str = (u8*)(s), .size = sizeof(s) - 1 }
 #define str_expand(s) (i32)(s).size, (s).str
 
-string_const str_alloc(M_Arena* arena, u64 size); // NOTE(EVERYONE): this will try to get one extra byte for \0
+// NOTE(EVERYONE): this will try to get one extra byte for \0
+string_const str_alloc(M_Arena* arena, u64 size);
+
 string_const str_copy(M_Arena* arena, string_const other);
 string_const str_cat(M_Arena* arena, string_const a, string_const b);
 string_const str_from_format(M_Arena* arena, const char* format, ...);

@@ -39,6 +39,7 @@ typedef struct D_Drawer {
 
 void D_Init(D_Drawer* _draw2d_state);
 void D_Shutdown(D_Drawer* _draw2d_state);
+void D_Resize(D_Drawer* _draw2d_state, rect new_rect);
 
 rect D_PushCullRect(D_Drawer* _draw2d_state, rect new_quad);
 void D_PopCullRect(D_Drawer* _draw2d_state, rect old_quad);

@@ -110,7 +110,7 @@ void C_PanelRender(D_Drawer* drawer, C_Panel* panel) {
         
         vec2 old = D_PushOffset(drawer, (vec2) { panel->bounds.x, panel->bounds.y });
         rect old_cull = D_PushCullRect(drawer, panel->bounds);
-        if (panel->content.render) panel->content.render(panel->context, drawer);
+        if (panel->content.render) panel->content.render(panel->context, drawer, panel->bounds);
         D_PopCullRect(drawer, old_cull);
         D_PopOffset(drawer, old);
         
@@ -197,6 +197,15 @@ void C_PanelResize(C_Panel* panel, rect new_bounds) {
     }
 }
 
+void C_PanelKeyCallback(C_Panel* panel, i32 key, i32 scancode, i32 action, i32 mods) {
+    if (panel->is_leaf) {
+        if (panel->content.key_input)
+            panel->content.key_input(panel->context, key, scancode, action, mods);
+    } else {
+        C_PanelKeyCallback(panel->a, key, scancode, action, mods);
+        C_PanelKeyCallback(panel->b, key, scancode, action, mods);
+    }
+}
 
 void C_PanelFreeAll(C_Panel* panel) {
     if (panel->is_leaf) {
@@ -245,6 +254,7 @@ void C_Init(C_ClientState* cstate) {
             
             PluginInitProcedure* init_proc = (PluginInitProcedure*) OS_LibraryGetFunction(lib, "Init");
             PluginUpdateProcedure* update_proc = (PluginUpdateProcedure*) OS_LibraryGetFunction(lib, "Update");
+            PluginKeyInputProcedure* key_input_proc = (PluginKeyInputProcedure*) OS_LibraryGetFunction(lib, "KeyInput");
             PluginFocusedUpdateProcedure* focused_update_proc = (PluginFocusedUpdateProcedure*) OS_LibraryGetFunction(lib, "FocusedUpdate");
             PluginRenderProcedure* render_proc = (PluginRenderProcedure*) OS_LibraryGetFunction(lib, "Render");
             PluginFreeProcedure* free_proc = (PluginFreeProcedure*) OS_LibraryGetFunction(lib, "Free");
@@ -252,7 +262,7 @@ void C_Init(C_ClientState* cstate) {
             PluginGlobalInitProcedure* global_init_proc = (PluginGlobalInitProcedure*) OS_LibraryGetFunction(lib, "GlobalInit");
             PluginGlobalFreeProcedure* global_free_proc = (PluginGlobalFreeProcedure*) OS_LibraryGetFunction(lib, "GlobalFree");
             
-            C_Plugin plugin = { lib, global_init_proc, global_free_proc, init_proc, update_proc, focused_update_proc, render_proc, free_proc };
+            C_Plugin plugin = { lib, global_init_proc, global_free_proc, key_input_proc, init_proc, update_proc, focused_update_proc, render_proc, free_proc };
             
             if (global_init_proc) global_init_proc();
             
@@ -317,6 +327,10 @@ void C_Update(I_InputState* input) {
 
 void C_Render(D_Drawer* drawer) {
     C_PanelRender(drawer, _client_state->root);
+}
+
+void C_KeyCallback(i32 key, i32 scancode, i32 action, i32 mods) {
+    C_PanelKeyCallback(_client_state->selected, key, scancode, action, mods);
 }
 
 void C_Shutdown() {

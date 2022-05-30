@@ -5,18 +5,21 @@
 
 //~ Plugin Stuff
 
-typedef void PluginGlobalInitProcedure();
-typedef void PluginGlobalFreeProcedure();
+typedef void  PluginGlobalInitProcedure();
+typedef void  PluginGlobalFreeProcedure();
+typedef void  PluginKeyInputProcedure(void* context, i32 key, i32 scancode, i32 action, i32 mods);
+
 typedef void* PluginInitProcedure();
-typedef void PluginUpdateProcedure(void* context, I_InputState* input);
-typedef void PluginFocusedUpdateProcedure(void* context, I_InputState* input);
-typedef void PluginRenderProcedure(void* context, D_Drawer* drawer);
-typedef void PluginFreeProcedure(void* context);
+typedef void  PluginUpdateProcedure(void* context, I_InputState* input);
+typedef void  PluginFocusedUpdateProcedure(void* context, I_InputState* input);
+typedef void  PluginRenderProcedure(void* context, D_Drawer* drawer, rect panel_size);
+typedef void  PluginFreeProcedure(void* context);
 
 typedef struct C_Plugin {
     OS_Library lib;
     PluginGlobalInitProcedure* global_init;
     PluginGlobalFreeProcedure* global_free;
+    PluginKeyInputProcedure* key_input;
     PluginInitProcedure* init;
     PluginUpdateProcedure* update;
     PluginFocusedUpdateProcedure* focused_update;
@@ -76,6 +79,7 @@ typedef struct C_ClientState {
 void C_Init(C_ClientState* cstate);
 void C_Update(I_InputState* input);
 void C_Render(D_Drawer* drawer);
+void C_KeyCallback(i32 key, i32 scancode, i32 action, i32 mods);
 void C_Shutdown();
 
 #endif //CLIENT_H

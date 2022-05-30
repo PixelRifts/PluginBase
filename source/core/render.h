@@ -16,6 +16,7 @@ typedef struct R_Renderer {
 void R_InitOpenGL(R_Renderer* _render_state);
 void R_BeginRenderOpenGL(R_Renderer* _render_state);
 void R_ShutdownOpenGL(R_Renderer* _render_state);
+void R_ResizeProjection(R_Renderer* _render_state, rect new_rect);
 
 typedef u32 R_Texture;
 

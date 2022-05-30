@@ -1,4 +1,6 @@
 
+Array_Impl(I_KeyCallbackProcArray, I_KeyCallbackProc*);
+
 static void I_KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (key < 0 || key >= 350) return;
     
@@ -20,6 +22,10 @@ static void I_KeyCallback(GLFWwindow* window, int key, int scancode, int action,
             input->key_states[key] |= 0b00000100;
         } break;
     }
+    
+    Iterate(input->key_callbacks, i) {
+        input->key_callbacks.elems[i](key, scancode, action, mods);
+    }
 }
 
 void I_CursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
@@ -36,18 +42,25 @@ void I_ScrollCallback(GLFWwindow* window, double xscroll, double yscroll) {
     input->mouse_absscrolly += (f32)yscroll;
 }
 
-b32 I_Init(I_InputState* _input_state, GLFWwindow* window) {
+void I_Init(I_InputState* _input_state, GLFWwindow* window) {
     _input_state->window = window;
     glfwSetKeyCallback(_input_state->window, I_KeyCallback);
     glfwSetCursorPosCallback(_input_state->window, I_CursorPosCallback);
     glfwSetScrollCallback(_input_state->window, I_ScrollCallback);
-    return true;
 }
 
 void I_Reset(I_InputState* _input_state) {
     memset(_input_state->key_states, 0, 350 * sizeof(u8));
     _input_state->mouse_scrollx = 0;
     _input_state->mouse_scrolly = 0;
+}
+
+void I_Free(I_InputState* _input_state) {
+    I_KeyCallbackProcArray_free(&_input_state->key_callbacks);
+}
+
+void I_RegisterKeyCallback(I_InputState* input, I_KeyCallbackProc* proc) {
+    I_KeyCallbackProcArray_add(&input->key_callbacks, proc);
 }
 
 b32 I_Key(I_InputState* input, i32 key) {

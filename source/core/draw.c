@@ -46,7 +46,7 @@ void D_Init(D_Drawer* _draw2d_state) {
     arena_init(&_draw2d_state->arena);
     _draw2d_state->initialized_batches = 1;
     _draw2d_state->current_batch = 0;
-    _draw2d_state->cull_quad = (rect) { 0, 0, 1080, 720 }; // @resize CULLQUAD
+    _draw2d_state->cull_quad = (rect) { 0, 0, 1080, 720 };
     _draw2d_state->offset = (vec2) { 0.f, 0.f };
     D_BatchArray_add(&_draw2d_state->batches, (D_Batch) {0});
     _draw2d_state->batches.elems[_draw2d_state->current_batch].cache = R_VertexCacheCreate(&_draw2d_state->arena, R_MAX_INTERNAL_CACHE_VCOUNT);
@@ -56,6 +56,11 @@ void D_Init(D_Drawer* _draw2d_state) {
 void D_Shutdown(D_Drawer* _draw2d_state) {
     arena_free(&_draw2d_state->arena);
     R_ShutdownOpenGL(&_draw2d_state->renderer);
+}
+
+void D_Resize(D_Drawer* _draw2d_state, rect new_rect) {
+    _draw2d_state->cull_quad = new_rect;
+    R_ResizeProjection(&_draw2d_state->renderer, new_rect);
 }
 
 rect D_PushCullRect(D_Drawer* _draw2d_state, rect new_quad) {

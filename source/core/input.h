@@ -8,6 +8,10 @@
 #ifndef INPUT_H
 #define INPUT_H
 
+typedef void I_KeyCallbackProc(i32 key, i32 scancode, i32 action, i32 mods);
+
+Array_Prototype(I_KeyCallbackProcArray, I_KeyCallbackProc*);
+
 typedef struct I_InputState {
     GLFWwindow* window;
     u8 key_states[350];
@@ -19,10 +23,15 @@ typedef struct I_InputState {
     f32 mouse_scrolly;
     f32 mouse_absscrollx;
     f32 mouse_absscrolly;
+    
+    I_KeyCallbackProcArray key_callbacks;
 } I_InputState;
 
-b32 I_Init(I_InputState* _input_state, GLFWwindow* window);
+void I_Init(I_InputState* _input_state, GLFWwindow* window);
 void I_Reset(I_InputState* input);
+void I_Free(I_InputState* _input_state);
+
+void I_RegisterKeyCallback(I_InputState* input, I_KeyCallbackProc* proc);
 
 b32 I_Key(I_InputState* input, i32 key);
 b32 I_KeyPressed(I_InputState* input, i32 key);
