@@ -5,14 +5,18 @@
 
 #include "defines.h"
 #include "base/ds.h"
-#include <glad/glad.h>
 #include "os/os.h"
+#include <string.h>
+#include <assert.h>
+#include <stdio.h>
+#include <glad/glad.h>
 
 #include "defines.h"
 #include "base/mem.h"
 #include "base/str.h"
 
 #include "vmath.h"
+#include "asset.h"
 #include "render.h"
 #include "draw.h"
 #include "input.h"

@@ -13,8 +13,6 @@
 
 dll_export void GlobalInit() {
     M_ScratchInit();
-    
-    gladLoadGL();
 }
 
 dll_export void GlobalFree() {

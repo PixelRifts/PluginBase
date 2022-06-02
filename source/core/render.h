@@ -18,8 +18,6 @@ void R_BeginRenderOpenGL(R_Renderer* _render_state);
 void R_ShutdownOpenGL(R_Renderer* _render_state);
 void R_ResizeProjection(R_Renderer* _render_state, rect new_rect);
 
-typedef u32 R_Texture;
-
 typedef struct R_Vertex {
     vec2 pos;
     vec2 tex_coords;
@@ -41,8 +39,6 @@ void R_VertexCacheReset(R_VertexCache* cache);
 b8   R_VertexCachePush(R_VertexCache* cache, R_Vertex* vertices, u32 vertex_count);
 void R_VertexCacheRender(R_VertexCache* cache);
 
-R_Texture R_TextureLoad(const char* filename);
-R_Texture R_TextureCreateWhite();
-void R_TextureBind(R_Texture texture, u32 s);
+void A_TextureBind(A_Texture texture, u32 s);
 
 #endif //RENDER_H

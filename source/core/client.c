@@ -57,19 +57,19 @@ void C_PanelChop(M_Arena* arena, C_Panel* parent_panel, C_PanelChopDir chop_dir)
     }
 }
 
-b32 C_PanelUpdate(C_Panel* panel, I_InputState* input) {
-    animate_f32exp(&panel->bounds.x, panel->target_bounds.x, 0.04f, 1.0f);
-    animate_f32exp(&panel->bounds.y, panel->target_bounds.y, 0.04f, 1.0f);
-    animate_f32exp(&panel->bounds.w, panel->target_bounds.w, 0.04f, 1.0f);
-    animate_f32exp(&panel->bounds.h, panel->target_bounds.h, 0.04f, 1.0f);
+b32 C_PanelUpdate(C_Panel* panel, I_InputState* input, A_AssetLoader* loader, f32 dt) {
+    animate_f32exp(&panel->bounds.x, panel->target_bounds.x, 40.f, dt);
+    animate_f32exp(&panel->bounds.y, panel->target_bounds.y, 40.f, dt);
+    animate_f32exp(&panel->bounds.w, panel->target_bounds.w, 40.f, dt);
+    animate_f32exp(&panel->bounds.h, panel->target_bounds.h, 40.f, dt);
     
     if (!panel->is_leaf) {
-        if (C_PanelUpdate(panel->a, input)) return false;
-        if (C_PanelUpdate(panel->b, input)) return false;
+        if (C_PanelUpdate(panel->a, input, loader, dt)) return false;
+        if (C_PanelUpdate(panel->b, input, loader, dt)) return false;
     }
     
     if (panel->content.update)
-        panel->content.update(panel->context, input);
+        panel->content.update(panel->context, input, dt);
     
     if (_client_state->selected == panel) {
         if (!panel->lister.visible) {
@@ -85,7 +85,7 @@ b32 C_PanelUpdate(C_Panel* panel, I_InputState* input) {
             
             panel->content = _client_state->plugins.elems[pick];
             if (panel->content.init)
-                panel->context = panel->content.init(panel->context);
+                panel->context = panel->content.init(loader);
             
             L_ListerFree(&panel->lister);
             panel->lister.visible = false;
@@ -102,17 +102,17 @@ b32 C_PanelUpdate(C_Panel* panel, I_InputState* input) {
     return false;
 }
 
-void C_PanelRender(D_Drawer* drawer, C_Panel* panel) {
+void C_PanelRender(D_CommandBuffer* cb, C_Panel* panel) {
     if (panel->is_leaf) {
         if (_client_state->selected == panel) { 
-            D_DrawQuadC(drawer, panel->bounds, (vec4) { 0.15f, 0.15f, 0.15f, 1.0f }, 10);
-        } else D_DrawQuadC(drawer, panel->bounds, (vec4) { 0.13f, 0.13f, 0.13f, 1.0f }, 10);
+            D_DrawQuadC(cb, panel->bounds, (vec4) { 0.15f, 0.15f, 0.15f, 1.0f }, 10);
+        } else D_DrawQuadC(cb, panel->bounds, (vec4) { 0.13f, 0.13f, 0.13f, 1.0f }, 10);
         
-        vec2 old = D_PushOffset(drawer, (vec2) { panel->bounds.x, panel->bounds.y });
-        rect old_cull = D_PushCullRect(drawer, panel->bounds);
-        if (panel->content.render) panel->content.render(panel->context, drawer, panel->bounds);
-        D_PopCullRect(drawer, old_cull);
-        D_PopOffset(drawer, old);
+        vec2 old = D_PushOffset(cb, (vec2) { panel->bounds.x, panel->bounds.y });
+        rect old_cull = D_PushCullRect(cb, panel->bounds);
+        if (panel->content.render) panel->content.render(panel->context, cb, panel->bounds);
+        D_PopCullRect(cb, old_cull);
+        D_PopOffset(cb, old);
         
         rect panel_lister_rect = {
             panel->bounds.x + (panel->bounds.w / 2.f) - (panel->bounds.w / 2.5f),
@@ -121,11 +121,11 @@ void C_PanelRender(D_Drawer* drawer, C_Panel* panel) {
             panel->bounds.h  - (panel->bounds.h / 5.f),
         };
         
-        L_ListerRender(&panel->lister, drawer, &_client_state->finfo, panel_lister_rect, _client_state->selected == panel);
+        L_ListerRender(&panel->lister, cb, _client_state->finfo, panel_lister_rect, _client_state->selected == panel);
         
     } else {
-        C_PanelRender(drawer, panel->a);
-        C_PanelRender(drawer, panel->b);
+        C_PanelRender(cb, panel->a);
+        C_PanelRender(cb, panel->b);
     }
 }
 
@@ -236,9 +236,9 @@ static void Refill(C_Panel* panel) {
 
 //~ Main Stuff
 
-void C_Init(C_ClientState* cstate) {
+void C_Init(C_ClientState* cstate, A_AssetLoader* loader) {
     _client_state = cstate;
-    D_LoadFont(&_client_state->finfo, str_lit("res/Inconsolata.ttf"), 22);
+    A_RequestLoadFont(loader, str_lit("res/Inconsolata.ttf"), 22, &_client_state->finfo);
     
     arena_init(&_client_state->arena);
     _client_state->root = C_PanelAlloc(&_client_state->arena, (rect) { 0.f, 0.f, 1080.f, 720.f }, (rect) { 0.f, 0.f, 1080.f, 720.f });
@@ -276,7 +276,7 @@ void C_Init(C_ClientState* cstate) {
     scratch_return(&scratch);
 }
 
-void C_Update(I_InputState* input) {
+void C_Update(I_InputState* input, A_AssetLoader* loader, f32 dt) {
     if (I_Key(input, GLFW_KEY_LEFT_CONTROL) || I_Key(input, GLFW_KEY_RIGHT_CONTROL)) {
         if (I_KeyPressed(input, GLFW_KEY_COMMA)) {
             if (I_Key(input, GLFW_KEY_LEFT_SHIFT) || I_Key(input, GLFW_KEY_RIGHT_SHIFT)) {
@@ -322,11 +322,12 @@ void C_Update(I_InputState* input) {
         L_ListerFree(&_client_state->selected->lister);
     }
     
-    C_PanelUpdate(_client_state->root, input);
+    C_PanelUpdate(_client_state->root, input, loader, dt);
+    A_LoadAllFontsAndTextures(loader);
 }
 
-void C_Render(D_Drawer* drawer) {
-    C_PanelRender(drawer, _client_state->root);
+void C_Render(D_CommandBuffer* cb) {
+    C_PanelRender(cb, _client_state->root);
 }
 
 void C_KeyCallback(i32 key, i32 scancode, i32 action, i32 mods) {
@@ -342,6 +343,5 @@ void C_Shutdown() {
     panel_array_free(&_client_state->panels);
     plugin_array_free(&_client_state->plugins);
     string_array_free(&_client_state->options);
-    D_FreeFont(&_client_state->finfo);
     arena_free(&_client_state->arena);
 }

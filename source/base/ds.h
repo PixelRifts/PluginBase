@@ -9,6 +9,7 @@
 #define DoubleCapacity(x) ((x) <= 0 ? 8 : x * 2)
 
 #define Iterate(array, var) for (int var = 0; var < array.len; var++)
+#define IterateCap(array, var) for (int var = 0; var < array.cap; var++)
 #define IteratePtr(array, var) for (int var = 0; var < array->len; var++)
 
 #define Array_Prototype(Name, Data)\

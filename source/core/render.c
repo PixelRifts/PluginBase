@@ -1,9 +1,3 @@
-#include <string.h>
-#include <assert.h>
-#include <stdio.h>
-
-#include <stb/stb_image.h>
-
 #include "shaders.h"
 
 void R_InitOpenGL(R_Renderer* _render_state) {
@@ -161,48 +155,7 @@ void R_VertexCacheRender(R_VertexCache* cache) {
     glDrawArrays(GL_TRIANGLES, 0, cache->count);
 }
 
-R_Texture R_TextureLoad(const char* filename) {
-    R_Texture texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    
-    i32 width, height, channels;
-    stbi_set_flip_vertically_on_load(true);
-    u8* data = stbi_load(filename, &width, &height, &channels, 0);
-    if (data != nullptr) {
-        if (channels == 3) {
-            // RGB
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-        } else if (channels == 4) {
-            // RGBA
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-        }
-    }
-    stbi_image_free(data);
-    return texture;
-}
-
-R_Texture R_TextureCreateWhite() {
-    R_Texture texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    u8 data[4] = { 255, 255, 255, 255 };
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-    return texture;
-}
-
-void R_TextureBind(R_Texture texture, u32 s) {
+void A_TextureBind(A_Texture texture, u32 s) {
     glActiveTexture(GL_TEXTURE0 + s);
     glBindTexture(GL_TEXTURE_2D, texture);
 }

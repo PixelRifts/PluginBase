@@ -9,6 +9,7 @@
 
 C_ClientState _client_state;
 D_Drawer drawer;
+D_CommandBuffer command_buffer;
 
 void resize_callback(GLFWwindow* window, int w, int h) {
     glViewport(0, 0, w, h);
@@ -29,6 +30,9 @@ int main(int argc, char** argv) {
     
     gladLoadGL();
     
+    A_AssetLoader loader = {0};
+    A_LoaderInit(&loader);
+    
     I_InputState input = {0};
     I_Init(&input, window);
     glfwSetWindowUserPointer(window, &input);
@@ -36,27 +40,43 @@ int main(int argc, char** argv) {
     I_RegisterKeyCallback(&input, C_KeyCallback);
     
     drawer = (D_Drawer) {0};
-    D_Init(&drawer);
+    D_Init(&drawer, &loader);
+    command_buffer = (D_CommandBuffer) {0};
+    D_CB_Init(&drawer, &command_buffer);
     
     _client_state = (C_ClientState) {0};
-    C_Init(&_client_state);
+    C_Init(&_client_state, &loader);
+    
+    A_LoadAllFontsAndTextures(&loader);
+    
+    f32 start = 0.f; f32 end = 0.016f;
+    f32 delta = 0.016f;
     
     while (!glfwWindowShouldClose(window)) {
+        delta = end - start;
+        start = glfwGetTime();
+        
         I_Reset(&input);
         glfwPollEvents();
         
-        C_Update(&input);
+        C_Update(&input, &loader, delta);
         
+        command_buffer.idx = 0;
+        C_Render(&command_buffer);
         D_BeginDraw(&drawer);
-        C_Render(&drawer);
+        D_SubmitCommandBuffer(&drawer, &command_buffer);
         D_EndDraw(&drawer);
         
         glfwSwapBuffers(window);
+        
+        end = glfwGetTime();
     }
     
     C_Shutdown();
+    D_CB_Free(&command_buffer);
     D_Shutdown(&drawer);
     I_Free(&input);
+    A_LoaderFree(&loader);
     
     glfwDestroyWindow(window);
     glfwTerminate();

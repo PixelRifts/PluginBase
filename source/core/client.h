@@ -9,10 +9,10 @@ typedef void  PluginGlobalInitProcedure();
 typedef void  PluginGlobalFreeProcedure();
 typedef void  PluginKeyInputProcedure(void* context, i32 key, i32 scancode, i32 action, i32 mods);
 
-typedef void* PluginInitProcedure();
-typedef void  PluginUpdateProcedure(void* context, I_InputState* input);
+typedef void* PluginInitProcedure(A_AssetLoader* loader);
+typedef void  PluginUpdateProcedure(void* context, I_InputState* input, f32 dt);
 typedef void  PluginFocusedUpdateProcedure(void* context, I_InputState* input);
-typedef void  PluginRenderProcedure(void* context, D_Drawer* drawer, rect panel_size);
+typedef void  PluginRenderProcedure(void* context, D_CommandBuffer* cb, rect panel_size);
 typedef void  PluginFreeProcedure(void* context);
 
 typedef struct C_Plugin {
@@ -56,7 +56,8 @@ struct C_Panel {
 
 C_Panel* C_PanelAlloc(M_Arena* arena, rect bounds, rect target);
 void C_PanelChop(M_Arena* arena, C_Panel* parent_panel, C_PanelChopDir chop_dir);
-void C_PanelRender(D_Drawer* drawer, C_Panel* panel);
+b32  C_PanelUpdate(C_Panel* panel, I_InputState* input, A_AssetLoader* loader, f32 dt);
+void C_PanelRender(D_CommandBuffer* cb, C_Panel* panel);
 void C_PanelDestroy(C_Panel* panel);
 void C_PanelResize(C_Panel* panel, rect new_bounds);
 
@@ -73,12 +74,12 @@ typedef struct C_ClientState {
     panel_array panels;
     plugin_array plugins;
     string_array options;
-    D_FontInfo finfo;
+    A_FontInfo* finfo;
 } C_ClientState;
 
-void C_Init(C_ClientState* cstate);
-void C_Update(I_InputState* input);
-void C_Render(D_Drawer* drawer);
+void C_Init(C_ClientState* cstate, A_AssetLoader* loader);
+void C_Update(I_InputState* input, A_AssetLoader* loader, f32 dt);
+void C_Render(D_CommandBuffer* cb);
 void C_KeyCallback(i32 key, i32 scancode, i32 action, i32 mods);
 void C_Shutdown();
 

@@ -4,6 +4,7 @@
 
 #include "vmath.c"
 #include "input.c"
+#include "asset.c"
 #include "render.c"
 #include "draw.c"
 #include "lister.c"
